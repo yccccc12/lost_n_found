@@ -1,0 +1,9 @@
+fastapi
+python-dotenv
+uvicorn
+pymongo[srv]==3.12
+bcrypt==4.3.0
+passlib
+boto3
+python-multipart
+groq
