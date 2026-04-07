@@ -1,59 +1,92 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CampusShell } from "@/components/campus-shell";
+import { BlockchainReceipt } from "@/components/blockchain-receipt";
 
 export default function RecordDetailPage() {
     const { id } = useParams();
+    const router = useRouter();
     const [record, setRecord] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("http://localhost:8000/items/")
+        if (!id) return;
+        
+        fetch(`http://localhost:8000/items/detail/${id}`)
             .then((res) => res.json())
             .then((data) => {
-                const found = data.find((item: any) => item._id === id);
-
-                if (found) {
-                    const formatted = {
-                        id: found._id,
-                        from: found.status === "lost" ? "Student" : "Lost & Found Office",
-                        to: found.status === "lost" ? "Lost & Found Office" : "Student",
-                        timestamp: found.event_date || "N/A",
-                        status: found.status === "lost" ? "Pending" : "Verified",
-                    };
-
-                    setRecord(formatted);
+                if (!data.error) {
+                    setRecord(data);
+                } else {
+                    setRecord(null);
                 }
-
+                setLoading(false);
+            })
+            .catch((err) => {
+                console.error("Error fetching record:", err);
                 setLoading(false);
             });
     }, [id]);
 
-    if (loading) return <p className="p-10">Loading record...</p>;
+    if (loading) {
+        return (
+            <CampusShell title="Record Details" showBack backHref="/records">
+                <div className="flex items-center justify-center py-20">
+                    <p className="text-lg font-medium text-muted-foreground animate-pulse">Loading record…</p>
+                </div>
+            </CampusShell>
+        );
+    }
 
-    if (!record) return <p className="p-10">Record not found</p>;
+    if (!record) {
+        return (
+            <CampusShell title="Record Details" showBack backHref="/records">
+                <div className="py-10 text-center space-y-4">
+                    <p className="text-lg font-medium text-destructive">Record not found</p>
+                    <Button
+                        variant="outline"
+                        className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                        onClick={() => router.push("/records")}
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Records
+                    </Button>
+                </div>
+            </CampusShell>
+        );
+    }
 
     return (
-        <div className="px-6 md:px-12 py-10">
-            <h1 className="text-4xl font-black mb-8">📄 Record Details</h1>
-
-            <div className="border-4 border-black rounded-2xl p-6 shadow-[6px_6px_0px_black] bg-white space-y-4">
-                <p><strong>ID:</strong> {record.id}</p>
-                <p><strong>From:</strong> {record.from}</p>
-                <p><strong>To:</strong> {record.to}</p>
-                <p><strong>Timestamp:</strong> {record.timestamp}</p>
-                <p>
-                    <strong>Status:</strong>{" "}
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        record.status === "Verified"
-                            ? "bg-green-200 text-green-800"
-                            : "bg-yellow-200 text-yellow-800"
-                    }`}>
-                        {record.status}
-                    </span>
-                </p>
+        <CampusShell title="Record Details" showBack backHref="/records">
+            <div className="max-w-2xl mx-auto">
+                <BlockchainReceipt
+                    txHash={record.tx_hash || null}
+                    itemId={record._id}
+                    itemName={record.name}
+                    reportType={record.status}
+                    eventDate={record.event_date || null}
+                    reportedAt={record.created_at || null}
+                    category={record.category || null}
+                    description={record.description || null}
+                    location={record.location || null}
+                    imageUrls={record.image_urls?.length ? record.image_urls : null}
+                >
+                    <div className="flex flex-wrap gap-3">
+                        <Button
+                            variant="outline"
+                            className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:w-fit"
+                            onClick={() => router.push("/records")}
+                        >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back to Records
+                        </Button>
+                    </div>
+                </BlockchainReceipt>
             </div>
-        </div>
+        </CampusShell>
     );
 }
