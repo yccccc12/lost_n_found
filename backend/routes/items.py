@@ -82,7 +82,8 @@ async def create_item(
 
     proof_hash = store_proof(hash_input)
     data["blockchain_hash"] = proof_hash
-
+    data["hash_input"] = hash_input
+    
     result = items_collection.insert_one(data)
 
     return {
