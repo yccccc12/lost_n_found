@@ -17,6 +17,13 @@ export function SiteHeader() {
           Campus Lost &amp; Found
         </Link>
 
+        <nav className="flex gap-6 text-sm font-medium">
+  <Link href="/">Home</Link>
+  <Link href="/found">Browse</Link>
+  <Link href="/report">Report</Link>
+  <Link href="/records">Blockchain Records</Link>
+</nav>
+
         <div className="order-2 flex flex-1 justify-center min-w-0 md:order-none">
           <div className="relative w-full max-w-md">
             <Search

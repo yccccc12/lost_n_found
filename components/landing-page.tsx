@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useEffect, useState } from "react";
 
 const btnOutline =
   'rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
@@ -189,6 +190,54 @@ export function LandingPage() {
               </Card>
             </div>
           </section>
+
+          {/* Blockchain Section START */}
+          <section className="mt-12">
+            <div className="p-6 bg-white border-4 border-black rounded-2xl shadow-[6px_6px_0px_black]">
+
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-black flex items-center gap-2">
+                  🔗 Blockchain Verification Log
+                </h2>
+
+                <Link
+                  href="/records"
+                  className="border-2 border-black px-3 py-1 rounded-md text-sm font-medium hover:bg-black hover:text-white transition duration-200"
+                >
+                  View All →
+                </Link>
+              </div>
+
+              <div className="space-y-2">
+
+                {/* Row 1 */}
+                <div className="flex justify-between items-center border-b pb-2 hover:bg-gray-50 transition duration-200 px-2 rounded">
+                  <div>
+                    <p className="text-xs text-gray-500 font-mono">0xA1B2C3</p>
+                    <p className="text-sm">Lost & Found → Student ID: 12345</p>
+                  </div>
+
+                  <span className="bg-green-200 text-green-800 px-2 py-1 rounded text-xs font-semibold">
+                    Verified
+                  </span>
+                </div>
+
+                {/* Row 2 */}
+                <div className="flex justify-between items-center border-b pb-2 hover:bg-gray-50 transition duration-200 px-2 rounded">
+                  <div>
+                    <p className="text-xs text-gray-500 font-mono">0xD4E5F6</p>
+                    <p className="text-sm">Student → Lost & Found</p>
+                  </div>
+
+                  <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
+                    Pending
+                  </span>
+                </div>
+
+              </div>
+            </div>
+          </section>
+          {/*  Blockchain Section END */}
 
           {/* Activity stats */}
           <section className="rounded-2xl border-4 border-black bg-slate-900 p-8 text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:p-10">
