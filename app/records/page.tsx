@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CampusShell } from "@/components/campus-shell";
 
 export default function RecordsPage() {
     const [records, setRecords] = useState<any[]>([]);
@@ -20,12 +21,19 @@ export default function RecordsPage() {
                     id: item._id,
                     from: item.status === "lost" ? "Student" : "Lost & Found Office",
                     to: item.status === "lost" ? "Lost & Found Office" : "Student",
-                    timestamp: item.event_date || "N/A",
-                    status: item.status === "lost" ? "Pending" : "Verified",
+                    timestamp: item.created_at
+                        ? new Intl.DateTimeFormat('en-MY', {
+                              timeZone: 'Asia/Kuala_Lumpur',
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                          }).format(new Date(item.created_at))
+                        : "N/A",
+                    status: item.status === "lost" ? "Reported" : "Secured",
                 }));
 
-                setRecords(formatted);
-                setFilteredRecords(formatted);
+                const sorted = formatted.reverse();
+                setRecords(sorted);
+                setFilteredRecords(sorted);
                 setLoading(false);
             })
             .catch((err) => {
@@ -54,16 +62,19 @@ export default function RecordsPage() {
 
     // ⏳ Loading state
     if (loading) {
-        return <p className="p-10">Loading records...</p>;
+        return (
+            <CampusShell title="Blockchain Records" showBack backHref="/">
+                <div className="flex items-center justify-center py-20">
+                    <p className="text-lg font-medium text-muted-foreground animate-pulse">Loading records…</p>
+                </div>
+            </CampusShell>
+        );
     }
 
     return (
-        <div className="px-6 md:px-12 py-10">
+        <CampusShell title="Blockchain Records" showBack backHref="/">
+            <div className="mx-auto w-full">
 
-            {/* Title */}
-            <h1 className="text-4xl md:text-5xl font-black mb-8">
-                🔗 Blockchain Records
-            </h1>
 
             {/* Search + Filter */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -81,8 +92,8 @@ export default function RecordsPage() {
                     onChange={(e) => setStatus(e.target.value)}
                 >
                     <option value="All">All</option>
-                    <option value="Verified">Verified</option>
-                    <option value="Pending">Pending</option>
+                    <option value="Secured">Secured</option>
+                    <option value="Reported">Reported</option>
                 </select>
             </div>
 
@@ -94,7 +105,7 @@ export default function RecordsPage() {
                     <div className="p-4">Record ID</div>
                     <div className="p-4">From</div>
                     <div className="p-4">To</div>
-                    <div className="p-4">Timestamp</div>
+                    <div className="p-4">Report date</div>
                     <div className="p-4">Status</div>
                 </div>
 
@@ -118,9 +129,9 @@ export default function RecordsPage() {
                             <div className="p-4 flex items-center gap-3">
                                 <span
                                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                        record.status === "Verified"
+                                        record.status === "Secured"
                                             ? "bg-green-200 text-green-800"
-                                            : "bg-yellow-200 text-yellow-800"
+                                            : "bg-amber-200 text-amber-800"
                                     }`}
                                 >
                                     {record.status}
@@ -136,7 +147,8 @@ export default function RecordsPage() {
                         </div>
                     ))
                 )}
+                </div>
             </div>
-        </div>
+        </CampusShell>
     );
 }
