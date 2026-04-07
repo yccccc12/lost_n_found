@@ -18,4 +18,9 @@ class Settings:
     # AI
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+    # Blockchain
+    DCAI_API_KEY=os.getenv("DCAI_API_KEY")
+    WALLET_ADDRESS=os.getenv("WALLET_ADDRESS")
+    WALLET_PRIVATE_KEY=os.getenv("WALLET_PRIVATE_KEY")
+
 settings = Settings()
