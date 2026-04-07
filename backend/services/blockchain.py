@@ -1,8 +1,17 @@
 import hashlib
 import json
+import time
+from web3 import Web3
+from config import settings
 
-# simulate blockchain storage
-proofs = set()
+# -----------------------------
+# Web3 Connection
+# -----------------------------
+RPC_URL = f"http://139.180.140.143/rpc/basic/{settings.DCAI_API_KEY}/"
+w3 = Web3(Web3.HTTPProvider(RPC_URL))
+
+PRIVATE_KEY = settings.WALLET_PRIVATE_KEY
+ADDRESS = settings.WALLET_ADDRESS
 
 
 # -----------------------------
@@ -35,17 +44,89 @@ def generate_hash(data: dict) -> str:
 
 
 # -----------------------------
-# Store Proof
+# Store Proof on Blockchain
 # -----------------------------
-def store_proof(data: dict) -> str:
+def store_proof(data: dict) -> dict:
+    """Store a SHA-256 proof hash on-chain via a self-transaction.
+
+    Returns a dict with:
+      - hash: the SHA-256 content hash
+      - tx_hash: the on-chain transaction hash (0x-prefixed)
+      - block_number: the block the tx was mined in
+    """
     hash_value = generate_hash(data)
-    proofs.add(hash_value)
-    return hash_value
+
+    nonce = w3.eth.get_transaction_count(ADDRESS)
+
+    tx = {
+        "nonce": nonce,
+        "to": ADDRESS,
+        "value": 0,
+        "gas": 200000,
+        "gasPrice": w3.to_wei("1", "gwei"),
+        "data": w3.to_hex(text=hash_value),
+        "chainId": 18441,
+    }
+
+    signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+
+    # Wait until mined
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+
+    return {
+        "hash": hash_value,
+        "tx_hash": "0x" + tx_hash.hex(),
+        "block_number": receipt.blockNumber,
+    }
+
+
+# -----------------------------
+# Safe Transaction Fetch (Retry)
+# -----------------------------
+def get_transaction_with_retry(tx_hash_hex: str, retries=5, delay=2):
+    for i in range(retries):
+        try:
+            return w3.eth.get_transaction(tx_hash_hex)
+        except Exception:
+            print(f"Retry {i+1}/{retries}...")
+            time.sleep(delay)
+    return None
 
 
 # -----------------------------
 # Verify Proof
 # -----------------------------
-def verify_proof(data: dict) -> bool:
-    hash_value = generate_hash(data)
-    return hash_value in proofs
+def verify_proof(tx_hash_hex: str, data: dict) -> dict:
+    """Verify that the on-chain data matches the expected hash for the given item data.
+
+    Args:
+        tx_hash_hex: The transaction hash (0x-prefixed) to look up on-chain.
+        data: The item fields to re-hash and compare.
+
+    Returns:
+        A dict with 'valid' (bool) and hash details or error info.
+    """
+    tx = get_transaction_with_retry(tx_hash_hex)
+
+    if not tx:
+        return {
+            "valid": False,
+            "error": "Transaction not found after retries",
+        }
+
+    try:
+        stored_hash = bytes(tx.input).decode()
+        current_hash = generate_hash(data)
+
+        return {
+            "valid": stored_hash == current_hash,
+            "stored_hash": stored_hash,
+            "current_hash": current_hash,
+        }
+
+    except Exception as e:
+        return {
+            "valid": False,
+            "error": str(e),
+        }

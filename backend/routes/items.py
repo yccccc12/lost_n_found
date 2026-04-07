@@ -96,8 +96,10 @@ async def create_item(
         "event_date": ev,
     }
 
-    proof_hash = store_proof(hash_input)
-    data["blockchain_hash"] = proof_hash
+    proof = store_proof(hash_input)
+    data["blockchain_hash"] = proof["hash"]
+    data["tx_hash"] = proof["tx_hash"]
+    data["block_number"] = proof["block_number"]
     data["hash_input"] = hash_input
     
     result = items_collection.insert_one(data)
@@ -106,7 +108,10 @@ async def create_item(
         "message": "Item created",
         "item_id": str(result.inserted_id),
         "image_urls": urls,
-        "blockchain_hash": proof_hash,
+        "blockchain_hash": proof["hash"],
+        "tx_hash": proof["tx_hash"],
+        "block_number": proof["block_number"],
+        "created_at": data["created_at"].isoformat()
     }
 
 
@@ -132,6 +137,20 @@ def get_items_by_status(status: Literal["lost", "found"]):
         item["_id"] = str(item["_id"])
         items.append(item)
     return items
+
+
+# -----------------------------
+# Get Item by ID
+# -----------------------------
+@router.get("/detail/{item_id}")
+def get_item(item_id: str):
+    if not ObjectId.is_valid(item_id):
+        raise HTTPException(status_code=400, detail="Invalid item ID format")
+    item = items_collection.find_one({"_id": ObjectId(item_id)})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item["_id"] = str(item["_id"])
+    return item
 
 
 # -----------------------------
@@ -177,6 +196,10 @@ def verify_item(item_id: str):
     if not item:
         return {"error": "Item not found"}
 
+    tx_hash = item.get("tx_hash")
+    if not tx_hash:
+        return {"error": "No blockchain transaction found for this item"}
+
     # rebuild EXACT same hash input
     hash_input = {
         "name": item.get("name"),
@@ -186,6 +209,6 @@ def verify_item(item_id: str):
         "event_date": item.get("event_date"),
     }
 
-    is_valid = verify_proof(hash_input)
+    result = verify_proof(tx_hash, hash_input)
 
-    return {"valid": is_valid}
+    return result
