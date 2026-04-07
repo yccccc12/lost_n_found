@@ -218,7 +218,7 @@ export function LandingPage() {
                   </div>
 
                   <span className="bg-green-200 text-green-800 px-2 py-1 rounded text-xs font-semibold">
-                    Verified
+                    Secured
                   </span>
                 </div>
 
@@ -229,8 +229,8 @@ export function LandingPage() {
                     <p className="text-sm">Student → Lost & Found</p>
                   </div>
 
-                  <span className="bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
-                    Pending
+                  <span className="bg-amber-200 text-amber-800 px-2 py-1 rounded text-xs font-semibold">
+                    Reported
                   </span>
                 </div>
 
