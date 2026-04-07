@@ -1,6 +1,6 @@
 import boto3, uuid
 from io import BytesIO
-from fastapi import UploadFile
+from starlette.datastructures import UploadFile
 from config import settings
 
 s3_client = boto3.client(

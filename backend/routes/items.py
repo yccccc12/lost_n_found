@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Form
-from typing import Annotated, Optional, Literal
+from fastapi import APIRouter, Request, HTTPException, Form
+from starlette.datastructures import UploadFile
+from typing import Optional, Literal
 from pydantic import BaseModel
 from datetime import datetime
 from bson import ObjectId
@@ -7,8 +8,6 @@ from bson import ObjectId
 from db.mongodb import items_collection
 from services.s3 import upload_to_s3
 from services.blockchain import store_proof, verify_proof
-
-from bson import ObjectId
 
 router = APIRouter(prefix="/items", tags=["Item"])
 
@@ -28,44 +27,61 @@ class Item(BaseModel):
     is_resolved: bool = False
 
 
+def _form_optional_str(value: object | None) -> Optional[str]:
+    if value is None:
+        return None
+    s = str(value).strip()
+    return s or None
+
+
 # -----------------------------
 # Create Item
 # -----------------------------
+# OpenAPI/Swagger: see main.py _patch_items_create_swagger_files (multipart + file pickers).
 @router.post("/create")
 async def create_item(
-    name: str = Form(...),
+    request: Request,
+    name: str = Form(..., description="Item title"),
     category: str = Form(...),
     description: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     event_date: Optional[str] = Form(None),
     contact_email: Optional[str] = Form(None),
-    status: Literal["lost", "found"] = Form(...),
-    files: Annotated[
-        list[UploadFile] | None,
-        File(
-            description="Optional. Choose one or more image files (multipart file upload, not raw text).",
-        ),
-    ] = None,
+    status: Literal["lost", "found"] = Form(..., description="Lost or found"),
 ):
-    urls = []
+    """Create an item. Text fields use Form(); files are read from the same multipart body.
 
-    for file in files or []:
-        if file is None:
+    Swagger may send a text placeholder for empty file slots; those are ignored when uploading.
+    """
+    status_val = status
+
+    form = await request.form()
+
+    urls: list[str] = []
+    for key, value in form.multi_items():
+        if key != "files":
             continue
-        filename = getattr(file, "filename", None) or ""
-        if not filename.strip():
+        if not isinstance(value, UploadFile):
             continue
-        url = await upload_to_s3(file)
+        filename = (value.filename or "").strip()
+        if not filename:
+            continue
+        url = await upload_to_s3(value)
         urls.append(url)
 
+    desc = _form_optional_str(description)
+    loc = _form_optional_str(location)
+    ev = _form_optional_str(event_date)
+    em = _form_optional_str(contact_email)
+
     item = Item(
-        name=name,
-        category=category,
-        description=description,
-        location=location,
-        event_date=event_date,
-        contact_email=contact_email,
-        status=status,
+        name=name.strip(),
+        category=category.strip(),
+        description=desc,
+        location=loc,
+        event_date=ev,
+        contact_email=em,
+        status=status_val,
         image_urls=urls,
     )
 
@@ -73,11 +89,11 @@ async def create_item(
     data["created_at"] = datetime.utcnow()
 
     hash_input = {
-        "name": name,
-        "category": category,
-        "description": description,
-        "location": location,
-        "event_date": event_date,
+        "name": name.strip(),
+        "category": category.strip(),
+        "description": desc,
+        "location": loc,
+        "event_date": ev,
     }
 
     proof_hash = store_proof(hash_input)

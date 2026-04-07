@@ -465,9 +465,12 @@ export function ReportItemForm() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">5. Photos</h2>
+        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">
+          5. Photos <span className="font-semibold normal-case text-muted-foreground">(optional)</span>
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Up to {MAX_FILES} images, {MAX_MB}MB each. JPG, PNG, or WebP.
+          Add photos if you have them — they help others recognize the item, but you can submit without images. Up to{' '}
+          {MAX_FILES} images, {MAX_MB}MB each. JPG, PNG, WebP, or GIF.
         </p>
         <input
           ref={fileInputRef}
@@ -531,7 +534,7 @@ export function ReportItemForm() {
             className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/40 bg-white/50 py-12 text-center text-sm font-medium text-muted-foreground transition hover:border-black hover:bg-orange-50/40"
           >
             <ImagePlus className="h-8 w-8 text-foreground/60" aria-hidden />
-            Drop images here or tap to browse
+            Drop images here or tap to browse (optional)
           </button>
         )}
       </section>
