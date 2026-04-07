@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { ImagePlus, Loader2, Mic, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -15,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { BlockchainReceipt } from '@/components/blockchain-receipt'
 import { cn } from '@/lib/utils'
 
 const inputBrutal =
@@ -51,6 +51,9 @@ export function ReportItemForm() {
   const [previews, setPreviews] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
   const [createdItemId, setCreatedItemId] = useState<string | null>(null)
+  const [blockchainHash, setBlockchainHash] = useState<string | null>(null)
+  const [txHash, setTxHash] = useState<string | null>(null)
+  const [reportedAt, setReportedAt] = useState<string | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -119,6 +122,9 @@ export function ReportItemForm() {
       }
 
       setCreatedItemId(typeof data?.item_id === 'string' ? data.item_id : null)
+      setBlockchainHash(typeof data?.blockchain_hash === 'string' ? data.blockchain_hash : null)
+      setTxHash(typeof data?.tx_hash === 'string' ? data.tx_hash : null)
+      setReportedAt(typeof data?.created_at === 'string' ? data.created_at : null)
       setSubmitted(true)
     } catch {
       setSubmitError('Something went wrong. Please try again.')
@@ -130,6 +136,9 @@ export function ReportItemForm() {
   function resetAfterSubmit() {
     setSubmitted(false)
     setCreatedItemId(null)
+    setBlockchainHash(null)
+    setTxHash(null)
+    setReportedAt(null)
     setSubmitError(null)
     setReportType('lost')
     setCategory('essentials')
@@ -230,24 +239,27 @@ export function ReportItemForm() {
 
   if (submitted) {
     return (
-      <Card className="border-4 border-black rounded-2xl bg-orange-50/90 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-        <CardHeader>
-          <CardTitle className="font-black text-xl sm:text-2xl">Report submitted</CardTitle>
-          <CardDescription className="text-base font-medium text-foreground/80">
-            Thanks — we&apos;ve received your report{createdItemId ? ` (reference: ${createdItemId})` : ''}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-            onClick={resetAfterSubmit}
-          >
-            Submit another report
-          </Button>
-        </CardContent>
-      </Card>
+      <BlockchainReceipt
+        txHash={txHash}
+        itemId={createdItemId}
+        itemName={itemName}
+        reportType={reportType}
+        eventDate={when}
+        reportedAt={reportedAt}
+        category={category}
+        description={details}
+        location={where}
+        imageUrls={previews.length ? previews : null}
+      >
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:w-fit"
+          onClick={resetAfterSubmit}
+        >
+          Submit another report
+        </Button>
+      </BlockchainReceipt>
     )
   }
 
