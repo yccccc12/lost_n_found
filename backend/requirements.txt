@@ -7,3 +7,4 @@ passlib
 boto3
 python-multipart
 groq
+web3
