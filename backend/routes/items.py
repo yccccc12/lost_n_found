@@ -6,6 +6,9 @@ from bson import ObjectId
 
 from db.mongodb import items_collection
 from services.s3 import upload_to_s3
+from services.blockchain import store_proof, verify_proof
+
+from bson import ObjectId
 
 router = APIRouter(prefix="/items", tags=["Item"])
 
@@ -69,12 +72,24 @@ async def create_item(
     data = item.dict()
     data["created_at"] = datetime.utcnow()
 
+    hash_input = {
+        "name": name,
+        "category": category,
+        "description": description,
+        "location": location,
+        "event_date": event_date,
+    }
+
+    proof_hash = store_proof(hash_input)
+    data["blockchain_hash"] = proof_hash
+
     result = items_collection.insert_one(data)
 
     return {
         "message": "Item created",
         "item_id": str(result.inserted_id),
-        "image_urls": urls
+        "image_urls": urls,
+        "blockchain_hash": proof_hash,
     }
 
 
@@ -134,3 +149,26 @@ def delete_item(item_id: str):
         return {"error": "Item not found"}
 
     return {"message": "Item deleted"}
+
+# -----------------------------
+# Verify Item Blockchain Hash
+# -----------------------------
+@router.post("/verify/{item_id}")
+def verify_item(item_id: str):
+    item = items_collection.find_one({"_id": ObjectId(item_id)})
+
+    if not item:
+        return {"error": "Item not found"}
+
+    # rebuild EXACT same hash input
+    hash_input = {
+        "name": item.get("name"),
+        "category": item.get("category"),
+        "description": item.get("description"),
+        "location": item.get("location"),
+        "event_date": item.get("event_date"),
+    }
+
+    is_valid = verify_proof(hash_input)
+
+    return {"valid": is_valid}
