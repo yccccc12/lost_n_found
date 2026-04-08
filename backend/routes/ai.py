@@ -35,8 +35,7 @@ def parse_report(body: ParseReportBody):
 @router.post("/search")
 def search_items(body: SearchQuery):
     found_items = []
-
-    for item in items_collection.find({"status": "found", "is_resolved": False}):
+    for item in items_collection.find({"status": "found"}):
         item["_id"] = str(item["_id"])
         found_items.append(item)
 

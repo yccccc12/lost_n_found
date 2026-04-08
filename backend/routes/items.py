@@ -22,10 +22,8 @@ class Item(BaseModel):
     location: Optional[str] = None
     event_date: Optional[str] = None
     contact_email: Optional[str] = None
-    status: Literal["lost", "found"]
+    status: Literal["lost", "found", "claimed"]
     image_urls: list[str] = []
-    is_resolved: bool = False
-
 
 def _form_optional_str(value: object | None) -> Optional[str]:
     if value is None:
