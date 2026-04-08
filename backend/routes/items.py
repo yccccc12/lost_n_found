@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, Form
 from starlette.datastructures import UploadFile
 from typing import Optional, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from bson import ObjectId
 
@@ -21,6 +21,10 @@ class Item(BaseModel):
     description: Optional[str] = None
     location: Optional[str] = None
     event_date: Optional[str] = None
+    email: Optional[str] = Field(
+        default=None,
+        description="Submitter email (session); included in blockchain hash when set.",
+    )
     contact_email: Optional[str] = None
     status: Literal["lost", "found", "claimed"]
     image_urls: list[str] = []
@@ -44,6 +48,10 @@ async def create_item(
     description: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     event_date: Optional[str] = Form(None),
+    email: Optional[str] = Form(
+        None,
+        description="Submitter email (e.g. from session); included in blockchain hash when set.",
+    ),
     contact_email: Optional[str] = Form(None),
     status: Literal["lost", "found"] = Form(..., description="Lost or found"),
 ):
@@ -70,6 +78,7 @@ async def create_item(
     desc = _form_optional_str(description)
     loc = _form_optional_str(location)
     ev = _form_optional_str(event_date)
+    session_email = _form_optional_str(email)
     em = _form_optional_str(contact_email)
 
     item = Item(
@@ -78,6 +87,7 @@ async def create_item(
         description=desc,
         location=loc,
         event_date=ev,
+        email=session_email,
         contact_email=em,
         status=status_val,
         image_urls=urls,
@@ -92,6 +102,7 @@ async def create_item(
         "description": desc,
         "location": loc,
         "event_date": ev,
+        "email": session_email,
     }
 
     proof = store_proof(hash_input)
@@ -198,13 +209,14 @@ def verify_item(item_id: str):
     if not tx_hash:
         return {"error": "No blockchain transaction found for this item"}
 
-    # rebuild EXACT same hash input
+    # rebuild EXACT same hash input (email omitted in chain when null — see blockchain.normalize)
     hash_input = {
         "name": item.get("name"),
         "category": item.get("category"),
         "description": item.get("description"),
         "location": item.get("location"),
         "event_date": item.get("event_date"),
+        "email": item.get("email"),
     }
 
     result = verify_proof(tx_hash, hash_input)

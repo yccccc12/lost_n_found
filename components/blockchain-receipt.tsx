@@ -2,7 +2,6 @@
 
 import { CheckCircle2, ExternalLink, Info, MapPin, Package, ShieldCheck, Tag } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 
 const CATEGORY_LABELS: Record<string, string> = {
   electronics: 'Electronics',
@@ -268,23 +267,6 @@ export function BlockchainReceipt({
             Verify Proof on Blockchain Explorer
           </a>
         ) : null}
-
-        {/* "Why blockchain?" accordion — progressive disclosure */}
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="why-blockchain" className="border-b-0">
-            <AccordionTrigger className="py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:no-underline gap-1 justify-start">
-              Why do we use the blockchain?
-            </AccordionTrigger>
-            <AccordionContent className="text-sm leading-relaxed text-muted-foreground pt-1">
-              Traditional databases can be edited or hacked. By stamping your report&apos;s hash
-              on the DCAI network, we create an{' '}
-              <strong className="font-semibold text-foreground/80">immutable record</strong>.
-              If there is ever a dispute over who owns this item, this receipt is your{' '}
-              <strong className="font-semibold text-foreground/80">absolute proof</strong> &mdash;
-              no one can alter the timestamp or the details after the fact.
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
 
         {/* Slot for extra actions (e.g. "Submit another report", "Back" buttons) */}
         {children}

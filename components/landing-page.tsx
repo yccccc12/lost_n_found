@@ -1,27 +1,94 @@
 'use client'
 
 import Link from 'next/link'
-import { MapPin, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { useEffect, useState } from "react";
-
 const btnOutline =
   'rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
 const cardSurface =
   'border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white overflow-hidden'
-const chip =
-  'rounded-full border-2 border-black text-xs font-bold px-3 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+
+/** Stylized linked blocks + seal — decorative, matches neubrutalist strokes. */
+function BlockchainChainGraphic({ className }: { className?: string }) {
+  const blocks = [
+    { x: 0, hash: '0x3…' },
+    { x: 118, hash: '0x4…' },
+    { x: 236, hash: '0x5…' },
+  ] as const
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 420 88"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <pattern id="trust-block-dots" width="8" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="1" fill="#94a3b8" />
+        </pattern>
+      </defs>
+      {/* connectors between blocks */}
+      <path
+        d="M102 44H118 M220 44H236"
+        stroke="#0f172a"
+        strokeWidth="5"
+        strokeLinecap="square"
+      />
+      {blocks.map((b, i) => (
+        <g key={i} transform={`translate(${b.x} 8)`}>
+          <rect width="102" height="72" rx="10" fill="white" stroke="#0f172a" strokeWidth="4" />
+          <rect
+            x="8"
+            y="10"
+            width="86"
+            height="18"
+            rx="4"
+            fill="url(#trust-block-dots)"
+            opacity="0.4"
+          />
+          <path
+            d="M12 40h32M12 48h22M12 56h26"
+            stroke="#0f172a"
+            strokeWidth="2.5"
+            strokeLinecap="square"
+            opacity="0.3"
+          />
+          <text
+            x="92"
+            y="54"
+            textAnchor="end"
+            fill="#0f172a"
+            style={{ fontSize: '11px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+            fontWeight="800"
+          >
+            {b.hash}
+          </text>
+        </g>
+      ))}
+      {/* sealed / verified badge */}
+      <g transform="translate(378 44)">
+        <circle r="22" fill="#0f172a" stroke="black" strokeWidth="3" />
+        <path
+          d="M-6 0l5 5 12-14"
+          stroke="white"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  )
+}
 
 export function LandingPage() {
   return (
@@ -43,6 +110,10 @@ export function LandingPage() {
               The official university portal for tracking and reporting found belongings. Verified,
               secure, and student-first.
             </p>
+            <p className="text-sm font-semibold text-slate-700">
+              You are signed in — browse listings, file a report, or explore blockchain records from the header
+              anytime.
+            </p>
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Button asChild variant="outline" className={btnOutline}>
                 <Link href="/found">Browse found items</Link>
@@ -59,143 +130,59 @@ export function LandingPage() {
             </div>
           </section>
 
-          {/* Recent found */}
-          <section className="space-y-8">
+          {/* Why blockchain — graphic strip + accordion */}
+          <section className="space-y-4">
             <div className="space-y-3">
-              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">Recent found items</h2>
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">Trust &amp; verification</h2>
               <div className="h-1 w-20 rounded-full bg-black" aria-hidden />
             </div>
+            <div
+              className={`${cardSurface} relative bg-white/90`}
+              style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, rgb(15 23 42 / 0.07) 1px, transparent 0)`,
+                backgroundSize: '20px 20px',
+              }}
+            >
+              <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full border-4 border-black/10 bg-orange-200/30" aria-hidden />
+              <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rotate-12 border-4 border-dashed border-black/15" aria-hidden />
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
-              <Card className={`${cardSurface} flex flex-col lg:col-span-2`}>
-                <div className="relative aspect-[16/10] border-b-4 border-black bg-muted">
-                  <img
-                    src="https://picsum.photos/seed/landing-mac/960/600"
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                    <span className={`${chip} bg-slate-900 text-white`}>Electronics</span>
-                    <span className={`${chip} bg-white text-black`}>Just Found</span>
-                  </div>
-                </div>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-2xl font-black">MacBook Pro</CardTitle>
-                  <CardDescription className="space-y-1 text-sm font-medium text-foreground/80">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
-                      <span>Oct 24, 2:15 PM</span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-                        Main Library, 3rd Floor East Wing
-                      </span>
-                    </div>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="leading-relaxed text-muted-foreground">
-                    Space gray 14&quot; laptop in a navy sleeve. Reported by library staff after closing
-                    hours.
+              <div className="relative border-b-4 border-black bg-gradient-to-br from-slate-50 via-emerald-50/50 to-slate-100 px-4 py-6 sm:px-8 sm:py-8">
+                <div className="min-w-0 space-y-3">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-600">
+                    DCAI · hashed receipts
                   </p>
-                </CardContent>
-                <CardFooter className="flex flex-wrap gap-3 border-t-2 border-black/10 pt-6">
-                  <Button
-                    className={`${btnOutline} bg-slate-900 text-white hover:bg-slate-900`}
-                    asChild
-                  >
-                    <Link href="/found/f3">Claim ownership</Link>
-                  </Button>
-                  <Button variant="outline" className={`${btnOutline} bg-white`} asChild>
-                    <Link href="/found/f3">Details</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              <div className="flex flex-col gap-5 lg:gap-6">
-                <Card className={`${cardSurface} flex flex-1 flex-col`}>
-                  <div className="relative h-36 border-b-4 border-black">
-                    <img
-                      src="https://picsum.photos/seed/landing-keys/400/200"
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                    <span className={`absolute left-2 top-2 ${chip} bg-amber-100 px-2 py-0.5`}>
-                      Essentials
-                    </span>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-black">Keys with red lanyard</CardTitle>
-                  </CardHeader>
-                  <CardFooter className="pt-0">
-                    <Button variant="outline" className={`w-full ${btnOutline}`} asChild>
-                      <Link href="/found/f4">View item</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-
-                <Card className={`${cardSurface} flex flex-1 flex-col`}>
-                  <div className="relative h-36 border-b-4 border-black">
-                    <img
-                      src="https://picsum.photos/seed/landing-book/400/200"
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                    <span className={`absolute left-2 top-2 ${chip} bg-blue-100 px-2 py-0.5`}>
-                      Books
-                    </span>
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-black">Chemistry textbook</CardTitle>
-                  </CardHeader>
-                  <CardFooter className="pt-0">
-                    <Button variant="outline" className={`w-full ${btnOutline}`} asChild>
-                      <Link href="/found/f5">View item</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
+                  <BlockchainChainGraphic className="h-auto w-full max-w-[440px] drop-shadow-[4px_4px_0_rgba(0,0,0,0.12)]" />
+                  <p className="max-w-xl text-sm font-medium text-slate-600">
+                    Each report is chained like a block: once sealed, the sequence—and your proof—stays
+                    intact.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-              <Card className={`${cardSurface} flex flex-col gap-4 p-5 sm:flex-row sm:items-center`}>
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                  <img
-                    src="https://picsum.photos/seed/landing-id/128/128"
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="truncate font-black">Student ID: James…</p>
-                  <p className="text-sm text-muted-foreground">Found: Quad area</p>
-                </div>
-                <Badge className="shrink-0 rounded-full border-2 border-black bg-red-500 font-bold text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                  Immediate claim
-                </Badge>
-              </Card>
-              <Card className={`${cardSurface} flex flex-col gap-4 p-5 sm:flex-row sm:items-center`}>
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                  <img
-                    src="https://picsum.photos/seed/landing-pod/128/128"
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="truncate font-black">AirPod (right side)</p>
-                  <p className="text-sm text-muted-foreground">Found: Gym locker room</p>
-                </div>
-                <Badge className="shrink-0 rounded-full border-2 border-black bg-blue-600 font-bold text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                  Pending
-                </Badge>
-              </Card>
+              <Accordion type="single" collapsible defaultValue="why-blockchain" className="w-full px-1 sm:px-2">
+                <AccordionItem value="why-blockchain" className="border-b-0 px-4 sm:px-6">
+                  <AccordionTrigger className="py-5 text-left text-lg font-black text-slate-900 hover:no-underline [&>svg]:text-slate-900">
+                    Why do we use the blockchain?
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-6 text-base leading-relaxed text-muted-foreground">
+                    <p>
+                      Traditional databases can be edited or hacked. By stamping your report&apos;s hash on
+                      the DCAI network, we create an{' '}
+                      <strong className="font-black text-slate-900">immutable record</strong>. If there is
+                      ever a dispute over who owns this item, this receipt is your{' '}
+                      <strong className="font-black text-slate-900">absolute proof</strong> — no one can
+                      alter the timestamp or the details after the fact.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </section>
 
           {/* Blockchain Section START */}
-          <section className="mt-12">
-            <div className="p-6 bg-white border-4 border-black rounded-2xl shadow-[6px_6px_0px_black]">
-
-              <div className="flex justify-between items-center mb-4">
+          <section>
+            <div className={`${cardSurface} bg-white/90 p-6`}>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-black flex items-center gap-2">
                   🔗 Blockchain Verification Log
                 </h2>

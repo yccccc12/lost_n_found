@@ -74,18 +74,7 @@ export default function RecordDetailPage() {
                     description={record.description || null}
                     location={record.location || null}
                     imageUrls={record.image_urls?.length ? record.image_urls : null}
-                >
-                    <div className="flex flex-wrap gap-3">
-                        <Button
-                            variant="outline"
-                            className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:w-fit"
-                            onClick={() => router.push("/records")}
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back to Records
-                        </Button>
-                    </div>
-                </BlockchainReceipt>
+                />
             </div>
         </CampusShell>
     );

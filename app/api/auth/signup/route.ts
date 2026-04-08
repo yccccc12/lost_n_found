@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { backendErrorMessage } from '@/lib/backend-error'
+import { setSessionEmailCookie } from '@/lib/auth-session'
 
 const authSchema = z.object({
   email: z.string().email('A valid email is required'),
@@ -24,7 +26,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const signupUrl = new URL('signup', backendEndpoint).toString()
+  const signupUrl = new URL('auth/signup', backendEndpoint).toString()
 
   try {
     const backendResponse = await fetch(signupUrl, {
@@ -38,11 +40,12 @@ export async function POST(request: Request) {
 
     if (!backendResponse.ok || responseJson?.error) {
       return NextResponse.json(
-        { error: responseJson?.error ?? 'Sign up failed' },
+        { error: backendErrorMessage(responseJson, 'Sign up failed') },
         { status: backendResponse.ok ? 400 : backendResponse.status },
       )
     }
 
+    await setSessionEmailCookie(parsedBody.data.email)
     return NextResponse.json(responseJson)
   } catch {
     return NextResponse.json(

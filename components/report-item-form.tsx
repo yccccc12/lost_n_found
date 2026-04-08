@@ -112,6 +112,7 @@ export function ReportItemForm() {
 
       const res = await fetch('/api/items/create', {
         method: 'POST',
+        credentials: 'include',
         body: fd,
       })
       const data = await res.json().catch(() => ({}))

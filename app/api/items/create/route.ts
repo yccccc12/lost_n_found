@@ -1,17 +1,6 @@
 import { NextResponse } from 'next/server'
-
-function errorMessageFromBackend(data: unknown): string {
-  if (!data || typeof data !== 'object') return 'Failed to submit report.'
-  const d = data as { detail?: unknown; message?: unknown; error?: unknown }
-  if (typeof d.error === 'string') return d.error
-  if (typeof d.message === 'string') return d.message
-  const detail = d.detail
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail) && detail[0] && typeof detail[0] === 'object' && 'msg' in detail[0]) {
-    return String((detail[0] as { msg: string }).msg)
-  }
-  return 'Failed to submit report.'
-}
+import { backendErrorMessage } from '@/lib/backend-error'
+import { getSessionEmailFromCookies } from '@/lib/auth-session'
 
 export async function POST(request: Request) {
   const backendEndpoint = process.env.BACKEND_ENDPOINT
@@ -23,6 +12,14 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData()
+  // Do not trust client-supplied `email` for hashing; only the session cookie may set it.
+  formData.delete('email')
+
+  const sessionEmail = await getSessionEmailFromCookies()
+  if (sessionEmail) {
+    formData.set('email', sessionEmail)
+  }
+
   const base = backendEndpoint.endsWith('/') ? backendEndpoint : `${backendEndpoint}/`
   const url = new URL('items/create', base).toString()
 
@@ -37,7 +34,7 @@ export async function POST(request: Request) {
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: errorMessageFromBackend(data) },
+        { error: backendErrorMessage(data, 'Failed to submit report.') },
         { status: res.status >= 400 && res.status < 600 ? res.status : 502 },
       )
     }
