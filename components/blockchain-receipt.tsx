@@ -20,8 +20,8 @@ interface BlockchainReceiptProps {
   itemId?: string | null
   /** Item name for extra context */
   itemName?: string | null
-  /** Report type — lost or found */
-  reportType?: 'lost' | 'found' | null
+  /** Report type — lost, found, or claimed */
+  reportType?: 'lost' | 'found' | 'claimed' | null
   /** Event date */
   eventDate?: string | null
   /** Real creation timestamp from database/system */
@@ -55,11 +55,19 @@ export function BlockchainReceipt({
     ? `${txHash.slice(0, 10)}…${txHash.slice(-8)}`
     : null
 
-  const statusLabel = reportType === 'found' ? 'Secured' : 'Reported'
-  const statusColor =
-    reportType === 'found'
-      ? 'border-emerald-700/30 bg-emerald-100 text-emerald-800'
-      : 'border-amber-700/30 bg-amber-100 text-amber-800'
+  let statusLabel = 'Reported'
+  let statusColor = 'border-amber-700/30 bg-amber-100 text-amber-800'
+  
+  if (reportType === 'found') {
+    statusLabel = 'Found - Ready for claim'
+    statusColor = 'border-amber-700/30 bg-amber-100 text-amber-800'
+  } else if (reportType === 'claimed') {
+    statusLabel = 'Found - Claimed'
+    statusColor = 'border-green-700/30 bg-green-100 text-green-800'
+  } else if (reportType === 'lost') {
+    statusLabel = 'Lost - In search'
+    statusColor = 'border-rose-700/30 bg-rose-100 text-rose-800'
+  }
 
   const formattedReportDate = reportedAt
     ? new Intl.DateTimeFormat('en-MY', {
