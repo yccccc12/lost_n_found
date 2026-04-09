@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import {
@@ -93,6 +94,40 @@ function BlockchainChainGraphic({ className }: { className?: string }) {
 }
 
 export function LandingPage() {
+  const [records, setRecords] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchRecords = async () => {
+      try {
+        const res = await fetch('/api/items/all')
+        const data = await res.json()
+        if (data && Array.isArray(data)) {
+          setRecords(data.slice(0, 3))
+        }
+      } catch (err) {
+        console.error('Error fetching records:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchRecords()
+  }, [])
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'claimed':
+        return { bg: 'bg-emerald-200', text: 'text-emerald-800', label: 'Returned' }
+      case 'found':
+        return { bg: 'bg-amber-200', text: 'text-amber-800', label: 'Found' }
+      case 'lost':
+        return { bg: 'bg-rose-200', text: 'text-rose-800', label: 'Lost' }
+      default:
+        return { bg: 'bg-gray-200', text: 'text-gray-800', label: status }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 px-3 py-4 sm:px-5 sm:py-6 md:px-8 md:py-10">
       <div className="mx-auto w-full max-w-7xl overflow-hidden rounded-3xl border-4 border-black bg-white/40 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] backdrop-blur-xl">
@@ -195,7 +230,7 @@ export function LandingPage() {
             <div className={`${cardSurface} bg-white/90 p-6`}>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-black flex items-center gap-2">
-                  🔗 Blockchain Verification Log
+                  🔗 Lost and Found Records
                 </h2>
 
                 <Link
@@ -207,47 +242,36 @@ export function LandingPage() {
               </div>
 
               <div className="space-y-2">
+                {loading ? (
+                  <p className="text-center text-sm text-gray-500 py-4">Loading records...</p>
+                ) : records.length > 0 ? (
+                  records.map((record, idx) => {
+                    const badge = getStatusBadge(record.status)
+                    const recordId = record._id || '—'
+                    return (
+                      <Link
+                        href={`/records/${record._id}`}
+                        key={idx}
+                        className="border-b pb-3 hover:bg-gray-50 transition duration-200 px-3 py-3 rounded cursor-pointer flex items-center gap-4 justify-between"
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <p className="text-xs text-gray-500 font-mono shrink-0 break-all">{recordId}</p>
+                          <p className="text-base font-semibold text-foreground">{record.name || 'Unnamed item'}</p>
+                        </div>
 
-                {/* Row 1 */}
-                <div className="flex justify-between items-center border-b pb-2 hover:bg-gray-50 transition duration-200 px-2 rounded">
-                  <div>
-                    <p className="text-xs text-gray-500 font-mono">0xA1B2C3</p>
-                    <p className="text-sm">Lost & Found → Student ID: 12345</p>
-                  </div>
-
-                  <span className="bg-green-200 text-green-800 px-2 py-1 rounded text-xs font-semibold">
-                    Secured
-                  </span>
-                </div>
-
-                {/* Row 2 */}
-                <div className="flex justify-between items-center border-b pb-2 hover:bg-gray-50 transition duration-200 px-2 rounded">
-                  <div>
-                    <p className="text-xs text-gray-500 font-mono">0xD4E5F6</p>
-                    <p className="text-sm">Student → Lost & Found</p>
-                  </div>
-
-                  <span className="bg-amber-200 text-amber-800 px-2 py-1 rounded text-xs font-semibold">
-                    Reported
-                  </span>
-                </div>
-
+                        <span className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded text-sm font-semibold whitespace-nowrap shrink-0`}>
+                          {badge.label}
+                        </span>
+                      </Link>
+                    )
+                  })
+                ) : (
+                  <p className="text-center text-sm text-gray-500 py-4">No records yet</p>
+                )}
               </div>
             </div>
           </section>
           {/*  Blockchain Section END */}
-
-          {/* Activity stats */}
-          <section className="rounded-2xl border-4 border-black bg-slate-900 p-8 text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:p-10">
-            <div className="grid gap-8 sm:grid-cols-2 sm:gap-10">
-              <p className="text-3xl font-black tracking-tight sm:text-4xl">128 found today</p>
-              <p className="text-3xl font-black tracking-tight sm:text-4xl">94% return rate</p>
-            </div>
-            <p className="mt-8 max-w-3xl border-t-2 border-white/20 pt-8 text-sm italic leading-relaxed text-white/90 sm:text-base">
-              Verified accounts help us ensure lost items find their rightful owners faster. Check your
-              student portal for updates.
-            </p>
-          </section>
 
           {/* Orange CTA */}
           <section className="rounded-2xl border-4 border-black bg-orange-500 p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:p-10">

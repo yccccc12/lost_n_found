@@ -111,7 +111,7 @@ export default function RecordsPage() {
 
     if (loading) {
         return (
-            <CampusShell title="Blockchain Records" showBack backHref="/">
+            <CampusShell title="Lost and Found Records" showBack backHref="/">
                 <div className="flex items-center justify-center py-20">
                     <p className="text-lg font-medium text-muted-foreground animate-pulse">Loading records…</p>
                 </div>
@@ -120,7 +120,7 @@ export default function RecordsPage() {
     }
 
     return (
-        <CampusShell title="Blockchain Records" showBack backHref="/">
+        <CampusShell title="Lost and Found Records" showBack backHref="/">
             <div className="mx-auto w-full">
 
                 {/* Search + Filter */}
