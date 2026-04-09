@@ -169,12 +169,15 @@ export default function RecordsPage() {
                                 <div className="p-4 text-sm font-medium truncate">{record.name}</div>
                                 <div className="p-4 text-sm text-gray-500">{record.timestamp}</div>
 
-                                {/* Status badge + View */}
-                                <div className="p-4 flex items-center gap-3">
-                                    <StatusBadge status={record.rawStatus} />
+                                {/* Status badge + View — justify-between aligns buttons in one column */}
+                                <div className="p-4 flex items-center justify-between gap-3 min-w-0">
+                                    <div className="min-w-0">
+                                        <StatusBadge status={record.rawStatus} />
+                                    </div>
                                     <button
+                                        type="button"
                                         onClick={() => router.push(`/records/${record.id}`)}
-                                        className="border-2 border-black px-3 py-1 rounded-md text-xs font-medium hover:bg-black hover:text-white transition"
+                                        className="shrink-0 mr-8 rounded-md border-2 border-black bg-white px-3 py-1 text-xs font-medium shadow-[4px_4px_0px_#000] transition hover:bg-black hover:text-white hover:shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                                     >
                                         View
                                     </button>
