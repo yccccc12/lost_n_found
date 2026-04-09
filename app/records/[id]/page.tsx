@@ -8,6 +8,10 @@ import { CampusShell } from '@/components/campus-shell'
 import { BlockchainReceipt } from '@/components/blockchain-receipt'
 import { ItemDetailHero } from '@/components/item-detail-hero'
 import { ItemDetailsPageTitle } from '@/components/item-details-page-title'
+import { toast } from '@/hooks/use-toast'
+
+const toastBrutalist =
+  'border-2 border-black bg-white text-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl'
 
 type RecordDoc = {
   _id: string
@@ -88,7 +92,12 @@ export default function RecordDetailPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        alert(typeof data?.error === 'string' ? data.error : 'Could not record the match on-chain.')
+        toast({
+          variant: 'destructive',
+          title: 'Could not record match',
+          description:
+            typeof data?.error === 'string' ? data.error : 'Could not record the match on-chain.',
+        })
         return
       }
       const refreshed = await fetch(`/api/items/detail/${encodeURIComponent(record._id)}`, {
@@ -103,9 +112,19 @@ export default function RecordDetailPage() {
           matched_tx_hash: typeof data.tx_hash === 'string' ? data.tx_hash : record.matched_tx_hash,
         })
       }
-      alert('A blockchain record was created and this listing is now marked as found.')
+      toast({
+        className: toastBrutalist,
+        title: 'Match recorded',
+        description:
+          'A blockchain record was created and this listing is now marked as found.',
+        duration: 6000,
+      })
     } catch {
-      alert('Could not connect to the server. Try again.')
+      toast({
+        variant: 'destructive',
+        title: 'Connection error',
+        description: 'Could not connect to the server. Try again.',
+      })
     } finally {
       setMatchLoading(false)
     }
@@ -128,13 +147,27 @@ export default function RecordDetailPage() {
         } else {
           setRecord({ ...record, status: 'claimed' })
         }
-        alert('Successfully claimed!')
+        toast({
+          className: toastBrutalist,
+          title: 'Successfully claimed!',
+          description: 'This listing is now marked as claimed on-chain.',
+          duration: 6000,
+        })
       } else {
         const data = await res.json().catch(() => ({}))
-        alert(typeof data?.error === 'string' ? data.error : 'Failed to claim item.')
+        toast({
+          variant: 'destructive',
+          title: 'Could not claim',
+          description:
+            typeof data?.error === 'string' ? data.error : 'Failed to claim item.',
+        })
       }
     } catch {
-      alert('Error claiming item.')
+      toast({
+        variant: 'destructive',
+        title: 'Could not claim',
+        description: 'Something went wrong while claiming. Try again.',
+      })
     } finally {
       setClaimLoading(false)
     }

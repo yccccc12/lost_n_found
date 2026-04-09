@@ -17,6 +17,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { BlockchainReceipt } from '@/components/blockchain-receipt'
 import { cn } from '@/lib/utils'
+import { toast } from '@/hooks/use-toast'
 
 const inputBrutal =
   'rounded-xl border-2 border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2'
@@ -376,10 +377,18 @@ export function ReportItemForm({
         setMatchConfirmedId(lostItemId)
         setCountdown(5)
       } else {
-        alert("Failed to confirm match. Please try again.")
+        toast({
+          variant: 'destructive',
+          title: 'Match failed',
+          description: 'Failed to confirm match. Please try again.',
+        })
       }
     } catch {
-      alert("Error confirming match.")
+      toast({
+        variant: 'destructive',
+        title: 'Match failed',
+        description: 'Error confirming match.',
+      })
     } finally {
       setMatchConfirmLoadingId(null)
     }
