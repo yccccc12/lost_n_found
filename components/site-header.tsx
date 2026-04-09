@@ -2,10 +2,86 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { Bell, LogOut, User } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Bell, ChevronDown, LogOut, User } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+
+const HOVER_CLOSE_DELAY_MS = 140
+
+const dropdownPanelClass =
+  'min-w-[12rem] rounded-xl border-2 border-black bg-white p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] origin-top duration-200 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2'
+
+const triggerClass =
+  'inline-flex items-center gap-1 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-black rounded-sm data-[state=open]:underline underline-offset-4'
+
+function HeaderNavDropdown({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current != null) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+  }, [])
+
+  const handleOpen = useCallback(() => {
+    clearCloseTimer()
+    setOpen(true)
+  }, [clearCloseTimer])
+
+  const scheduleClose = useCallback(() => {
+    clearCloseTimer()
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false)
+      closeTimerRef.current = null
+    }, HOVER_CLOSE_DELAY_MS)
+  }, [clearCloseTimer])
+
+  useEffect(() => () => clearCloseTimer(), [clearCloseTimer])
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+      <DropdownMenuTrigger
+        className={triggerClass}
+        onPointerEnter={handleOpen}
+        onPointerLeave={scheduleClose}
+      >
+        {label}
+        <ChevronDown
+          className={cn(
+            'h-4 w-4 shrink-0 opacity-70 transition-transform duration-200 ease-out',
+            open && 'rotate-180'
+          )}
+          aria-hidden
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={6}
+        className={dropdownPanelClass}
+        onPointerEnter={handleOpen}
+        onPointerLeave={scheduleClose}
+      >
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 export function SiteHeader() {
   const router = useRouter()
@@ -55,10 +131,24 @@ export function SiteHeader() {
             Campus Lost &amp; Found
           </Link>
 
-          <nav className="flex flex-wrap gap-6 text-sm font-medium">
+          <nav className="flex flex-wrap items-center gap-6 text-sm font-medium">
             <Link href="/">Home</Link>
-            <Link href="/found">Browse</Link>
-            <Link href="/report">Report</Link>
+            <HeaderNavDropdown label="Browse">
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg font-medium focus:bg-slate-100">
+                <Link href="/browse?type=lost">Lost items</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg font-medium focus:bg-slate-100">
+                <Link href="/browse?type=found">Found items</Link>
+              </DropdownMenuItem>
+            </HeaderNavDropdown>
+            <HeaderNavDropdown label="Report">
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg font-medium focus:bg-slate-100">
+                <Link href="/report?type=lost">Lost items</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg font-medium focus:bg-slate-100">
+                <Link href="/report?type=found">Found items</Link>
+              </DropdownMenuItem>
+            </HeaderNavDropdown>
             <Link href="/records">Blockchain Records</Link>
           </nav>
         </div>

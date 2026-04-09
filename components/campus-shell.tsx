@@ -20,7 +20,7 @@ export function CampusShell({
   title,
   titleSlot,
   showBack,
-  backHref = '/found',
+  backHref = '/',
   headerRight,
 }: CampusShellProps) {
   const showPageBar =

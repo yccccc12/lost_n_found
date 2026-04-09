@@ -42,7 +42,6 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
   const [when, setWhen] = useState('')
   const [where, setWhere] = useState('')
   const [details, setDetails] = useState('')
-  const [email, setEmail] = useState('')
 
   const [lazyText, setLazyText] = useState('')
   const [speechListening, setSpeechListening] = useState(false)
@@ -113,7 +112,6 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
       fd.append('description', details.trim())
       fd.append('location', where.trim())
       if (when) fd.append('event_date', when)
-      if (email.trim()) fd.append('contact_email', email.trim())
       fd.append('status', reportType)
       for (const file of files) {
         fd.append('files', file)
@@ -160,7 +158,6 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
     setWhen('')
     setWhere('')
     setDetails('')
-    setEmail('')
     setLazyText('')
     setAiError(null)
     setFiles([])
@@ -243,7 +240,6 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
       if (f.location) setWhere(f.location)
       if (f.event_date) setWhen(f.event_date)
       if (f.details) setDetails(f.details)
-      if (f.email) setEmail(f.email)
     } catch {
       setAiError('Could not reach the AI service.')
     } finally {
@@ -449,7 +445,7 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
             id={`${formId}-lazy`}
             value={lazyText}
             onChange={(e) => setLazyText(e.target.value)}
-            placeholder='Example: "I lost my black wallet yesterday near the main library third floor. It has a small red tag. Reach me at alex@university.edu."'
+            placeholder='Example: "I lost my black wallet yesterday near the main library third floor. It has a small red tag."'
             rows={4}
             className={cn(inputBrutal, 'min-h-[120px] resize-y pr-14')}
             aria-label="Natural language description for quick fill"
@@ -684,25 +680,6 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
             Drop images here or tap to browse (optional)
           </button>
         )}
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">5. Contact (optional)</h2>
-        <div className="space-y-2">
-          <Label htmlFor={`${formId}-email`} className="font-bold">
-            Campus email
-          </Label>
-          <Input
-            id={`${formId}-email`}
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@university.edu"
-            autoComplete="email"
-            className={inputBrutal}
-          />
-        </div>
       </section>
 
       <div className="flex flex-col gap-3 border-t-2 border-black/10 pt-6 sm:flex-row sm:items-center sm:justify-between">

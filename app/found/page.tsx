@@ -1,11 +1,6 @@
-import { CampusShell } from '@/components/campus-shell'
-import { FoundItemsExplorer } from '@/components/found-items-explorer'
-import { FoundPageTitle } from '@/components/found-page-title'
+import { redirect } from 'next/navigation'
 
-export default function FoundItemsPage() {
-  return (
-    <CampusShell showBack backHref="/" titleSlot={<FoundPageTitle />}>
-      <FoundItemsExplorer />
-    </CampusShell>
-  )
+/** @deprecated Use `/browse?type=found` */
+export default function FoundItemsRedirect() {
+  redirect('/browse?type=found')
 }

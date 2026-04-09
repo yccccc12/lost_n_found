@@ -29,6 +29,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/',
+    '/browse/:path*',
     '/found/:path*',
     '/lost/:path*',
     '/report/:path*',

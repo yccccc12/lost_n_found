@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import {
@@ -121,9 +121,11 @@ export function LandingPage() {
                 asChild
                 className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border-2 border-black bg-slate-900 px-4 text-sm font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-900"
               >
-                <Link href="/report?type=lost">
-                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                  Report Lost Item - I lost something
+                <Link href="/report?type=lost" className="inline-flex items-center gap-2">
+                  <span className="text-base leading-none" aria-hidden>
+                    ❔
+                  </span>
+                  Lost something
                 </Link>
               </Button>
               <Button
@@ -132,8 +134,8 @@ export function LandingPage() {
                 className={cn(btnOutline, "bg-white text-black hover:bg-slate-100")}
               >
                 <Link href="/report?type=found">
-                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                  Report Found Item - I found something
+                  <Search className="h-4 w-4 shrink-0" aria-hidden />
+                  Found something
                 </Link>
               </Button>
             </div>

@@ -50,9 +50,10 @@ export function FoundItemDetailView({ item }: FoundItemDetailViewProps) {
               size="sm"
               className="h-9 w-fit gap-1.5 rounded-xl border-2 border-black bg-white/90 px-3 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-white"
             >
-              <Link href="/found">
+              <Link href="/browse?type=found" className="text-black">
                 <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-                All found items
+                <span>All </span>
+                <span className="text-emerald-600">found items</span>
               </Link>
             </Button>
 

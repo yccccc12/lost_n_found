@@ -102,7 +102,7 @@ export function BlockchainReceipt({
           <ShieldCheck className="h-8 w-8 text-emerald-700" aria-hidden />
         </div>
         <CardTitle className="font-black text-xl sm:text-2xl tracking-tight">
-          {itemName ? `"${itemName}" — ` : ''}Item Secured on the DCAI Network
+          Item Secured on the DCAI Network
         </CardTitle>
         <CardDescription className="text-sm font-medium text-foreground/70 mt-1 max-w-md mx-auto leading-relaxed">
           This report is cryptographically locked. You have undeniable proof of this item&apos;s details and timestamp
