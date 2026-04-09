@@ -8,7 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Calendar, MapPin } from 'lucide-react'
+import { Calendar, ImageOff, MapPin } from 'lucide-react'
+
+function hasItemImage(url: string | undefined): boolean {
+  return Boolean(url?.trim())
+}
 
 type ItemCardProps = {
   item: ItemEntry
@@ -17,6 +21,8 @@ type ItemCardProps = {
 }
 
 export function ItemCard({ item, href }: ItemCardProps) {
+  const showImage = hasItemImage(item.imageUrl)
+
   const card = (
     <Card
       className={cn(
@@ -24,12 +30,30 @@ export function ItemCard({ item, href }: ItemCardProps) {
         href && 'hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]',
       )}
     >
-      <div className="relative aspect-[4/3] w-full border-b-4 border-black bg-muted">
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          className="h-full w-full object-cover"
-        />
+      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden border-b-4 border-black bg-muted">
+        {showImage ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[linear-gradient(145deg,hsl(var(--muted))_0%,hsl(var(--muted)/0.72)_45%,hsl(var(--muted)/0.88)_100%)] px-6"
+            role="img"
+            aria-label="No image available for this item"
+          >
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-dashed border-foreground/15 bg-background/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5)]"
+              aria-hidden
+            >
+              <ImageOff className="h-7 w-7 text-foreground/25" strokeWidth={1.35} />
+            </div>
+            <p className="max-w-[12rem] text-center text-[11px] font-semibold uppercase leading-snug tracking-[0.18em] text-muted-foreground/80">
+              No image available
+            </p>
+          </div>
+        )}
       </div>
       <CardHeader className="space-y-1">
         <CardTitle className="text-lg font-black leading-tight">{item.name}</CardTitle>

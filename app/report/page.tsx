@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { CampusShell } from '@/components/campus-shell'
 import { ReportPageTitle } from '@/components/report-page-title'
 import { ReportItemForm } from '@/components/report-item-form'
@@ -10,12 +11,19 @@ export const metadata: Metadata = {
 }
 
 interface PageProps {
-  searchParams: Promise<{ type?: string }>
+  searchParams: Promise<{ type?: string; matchLost?: string }>
 }
 
 export default async function ReportPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const initialType = params.type === 'found' ? 'found' : 'lost'
+  const rawMatch = params.matchLost?.trim()
+  const matchLost =
+    typeof rawMatch === 'string' && /^[a-f\d]{24}$/i.test(rawMatch) ? rawMatch : undefined
+
+  const initialType: 'lost' | 'found' = params.type === 'found' ? 'found' : 'lost'
+  if (matchLost && initialType !== 'found') {
+    redirect(`/report?type=found&matchLost=${encodeURIComponent(matchLost)}`)
+  }
 
   return (
     <CampusShell
@@ -23,7 +31,7 @@ export default async function ReportPage({ searchParams }: PageProps) {
       backHref="/"
       titleSlot={<ReportPageTitle variant={initialType} />}
     >
-      <ReportItemForm initialType={initialType} />
+      <ReportItemForm initialType={initialType} matchLostItemId={matchLost} />
     </CampusShell>
   )
 }

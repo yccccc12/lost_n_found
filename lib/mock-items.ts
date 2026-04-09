@@ -4,6 +4,7 @@ export type ItemEntry = {
   description: string
   location: string
   date: string
+  /** Empty string means no image — `ItemCard` shows a placeholder. */
   imageUrl: string
 }
 

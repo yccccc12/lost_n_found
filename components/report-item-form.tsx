@@ -29,7 +29,14 @@ function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null
 }
 
-export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' | 'found' }) {
+export function ReportItemForm({
+  initialType = 'lost',
+  matchLostItemId,
+}: {
+  initialType?: 'lost' | 'found'
+  /** When set (from &matchLost= on /report), found reports auto-link to this lost listing after submit. */
+  matchLostItemId?: string
+}) {
   const formId = useId()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -64,10 +71,17 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
   const [countdown, setCountdown] = useState<number | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [autoMatchError, setAutoMatchError] = useState<string | null>(null)
 
   useEffect(() => {
     setSpeechSupported(!!getSpeechRecognitionCtor())
   }, [])
+
+  useEffect(() => {
+    if (matchLostItemId) {
+      setReportType('found')
+    }
+  }, [matchLostItemId])
 
   useEffect(() => {
     return () => {
@@ -152,6 +166,7 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
     setMatchConfirmedId(null)
     setMatchConfirmLoadingId(null)
     setCountdown(null)
+    setAutoMatchError(null)
     setReportType(initialType)
     setCategory('essentials')
     setItemName('')
@@ -248,7 +263,7 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
   }
 
   useEffect(() => {
-    if (submitted && reportType === 'found') {
+    if (submitted && reportType === 'found' && !matchLostItemId) {
       setSearchMatchesLoading(true)
       const queryStr = `${itemName} ${details} ${where}`.trim()
       fetch('/api/ai/search', {
@@ -265,7 +280,43 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
           setSearchMatchesLoading(false)
         })
     }
-  }, [submitted, reportType, itemName, details, where])
+  }, [submitted, reportType, itemName, details, where, matchLostItemId])
+
+  useEffect(() => {
+    if (!submitted || reportType !== 'found' || !matchLostItemId || !createdItemId) return
+
+    let cancelled = false
+    setAutoMatchError(null)
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/items/${matchLostItemId}/match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ found_item_id: createdItemId }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (cancelled) return
+        if (res.ok) {
+          setMatchConfirmedId(matchLostItemId)
+          setCountdown(5)
+        } else {
+          setAutoMatchError(
+            typeof data?.error === 'string' ? data.error : 'Could not link to that lost listing automatically.',
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setAutoMatchError('Could not link to that lost listing. You can still share your report ID with campus staff.')
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [submitted, reportType, matchLostItemId, createdItemId])
 
   useEffect(() => {
     if (submitted && reportType === 'found' && matchedLostItems.length > 0) {
@@ -318,6 +369,7 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
       const res = await fetch(`/api/items/${lostItemId}/match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ found_item_id: createdItemId }),
       })
       if (res.ok) {
@@ -364,8 +416,20 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
             Submit another report
           </Button>
         </BlockchainReceipt>
-        
-        {reportType === 'found' && (
+
+        {autoMatchError ? (
+          <div className="rounded-xl border-2 border-destructive bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            {autoMatchError}
+          </div>
+        ) : null}
+
+        {matchLostItemId && matchConfirmedId === matchLostItemId ? (
+          <p className="text-center text-sm font-bold text-green-800">
+            Your found report was linked to the lost listing you opened.
+          </p>
+        ) : null}
+
+        {reportType === 'found' && !matchLostItemId && (
           <div className="space-y-4" ref={matchesRef}>
             <h3 className="text-xl font-black uppercase text-slate-900 border-b-2 border-black pb-2">
               Potential Owners
@@ -424,6 +488,18 @@ export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' 
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-8">
+      {matchLostItemId ? (
+        <div className="rounded-2xl border-2 border-amber-600 bg-amber-50/90 p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:p-5">
+          <p className="text-sm font-black text-amber-950">
+            You&apos;re filing a found report for an existing lost listing.
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-amber-900/90">
+            Describe what you found below. After you submit, we&apos;ll try to link your report to that listing (sign in
+            may be required; you can&apos;t match your own lost report).
+          </p>
+        </div>
+      ) : null}
+
       <section
         className="space-y-4 rounded-2xl border-2 border-black bg-amber-50/40 p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:p-5"
         aria-label="Quick fill from natural language"

@@ -3,6 +3,16 @@
 import { CheckCircle2, ExternalLink, Info, MapPin, Package, ShieldCheck, Tag } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+const EXPLORER_TX_BASE = 'http://139.180.140.143/tx'
+
+function shortTx(hash: string) {
+  return `${hash.slice(0, 10)}…${hash.slice(-8)}`
+}
+
+function explorerTxUrl(hash: string) {
+  return `${EXPLORER_TX_BASE}/${encodeURIComponent(hash)}`
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   electronics: 'Electronics',
   essentials: 'Essentials & Keys',
@@ -15,6 +25,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 interface BlockchainReceiptProps {
   /** The real blockchain transaction hash (0x-prefixed) */
   txHash?: string | null
+  /** Optional hash for the on-chain "matched" event (lost → found via finder) */
+  matchTxHash?: string | null
   /** The closing transaction hash (when claimed) */
   closingTxHash?: string | null
   /** The MongoDB document ID */
@@ -41,6 +53,7 @@ interface BlockchainReceiptProps {
 
 export function BlockchainReceipt({
   txHash,
+  matchTxHash,
   closingTxHash,
   itemId,
   itemName,
@@ -53,13 +66,42 @@ export function BlockchainReceipt({
   imageUrls,
   children,
 }: BlockchainReceiptProps) {
-  const displayHash = txHash
-    ? `${txHash.slice(0, 10)}…${txHash.slice(-8)}`
-    : null
+  const chainRecords: {
+    key: string
+    title: string
+    description: string
+    hash: string
+    codeClass: string
+  }[] = []
 
-  const displayClosingHash = closingTxHash
-    ? `${closingTxHash.slice(0, 10)}…${closingTxHash.slice(-8)}`
-    : null
+  if (txHash) {
+    chainRecords.push({
+      key: 'initial',
+      title: 'Initial report',
+      description:
+        'Seals the listing details when this report was first submitted (lost or found).',
+      hash: txHash,
+      codeClass: 'border-black/15 bg-slate-100 text-slate-800',
+    })
+  }
+  if (matchTxHash) {
+    chainRecords.push({
+      key: 'match',
+      title: 'Match recorded',
+      description: 'A separate on-chain event when this listing was marked as found by a finder.',
+      hash: matchTxHash,
+      codeClass: 'border-amber-600/30 bg-amber-50 text-amber-950',
+    })
+  }
+  if (closingTxHash) {
+    chainRecords.push({
+      key: 'claim',
+      title: 'Claim recorded',
+      description: "Anchors the owner's confirmation that the item was handed back.",
+      hash: closingTxHash,
+      codeClass: 'border-green-600/30 bg-green-50 text-green-900',
+    })
+  }
 
   let statusLabel = 'Reported'
   let statusColor = 'border-amber-700/30 bg-amber-100 text-amber-800'
@@ -102,18 +144,19 @@ export function BlockchainReceipt({
           <ShieldCheck className="h-8 w-8 text-emerald-700" aria-hidden />
         </div>
         <CardTitle className="font-black text-xl sm:text-2xl tracking-tight">
-          Item Secured on the DCAI Network
+          Blockchain verification
         </CardTitle>
         <CardDescription className="text-sm font-medium text-foreground/70 mt-1 max-w-md mx-auto leading-relaxed">
-          This report is cryptographically locked. You have undeniable proof of this item&apos;s details and timestamp
+          {chainRecords.length > 1
+            ? 'This listing can have several on-chain transactions as it moves from reported → found → claimed.'
+            : "On-chain proof of this report's details and timing"}
           {itemId ? (
             <>
-              {' '}&mdash;{' '}
+              {' '}
+              &mdash;{' '}
               <span className="font-semibold text-foreground/80">ref: {itemId}</span>
             </>
-          ) : (
-            ''
-          )}
+          ) : null}
           .
         </CardDescription>
       </CardHeader>
@@ -218,48 +261,62 @@ export function BlockchainReceipt({
 
           <div className="h-px bg-black/10" />
 
-
-
-          {/* Transaction ID row */}
-          {displayHash ? (
-            <div className="flex items-center justify-between gap-3">
-              <span
-                className="inline-flex items-center gap-1 text-sm font-bold text-slate-700 cursor-help"
-                title="A unique, permanent digital fingerprint. It proves exactly when this item was reported and guarantees the details cannot be tampered with."
-              >
-                {reportType === 'claimed' && displayClosingHash ? "Report Transaction" : "Transaction ID"}
-                <Info className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-              </span>
-              <code
-                className="rounded-md border border-black/15 bg-slate-100 px-2.5 py-1 text-xs font-mono font-bold text-slate-800 select-all"
-                title={txHash ?? undefined}
-              >
-                {displayHash}
-              </code>
-            </div>
-          ) : null}
-
-          {/* Closing Transaction row */}
-          {reportType === 'claimed' && displayClosingHash ? (
-            <>
-              <div className="h-px bg-black/10" />
-              <div className="flex items-center justify-between gap-3">
-                <span
-                  className="inline-flex items-center gap-1 text-sm font-bold text-slate-700 cursor-help"
-                  title="The final fingerprint that legally anchors the handover of this property to the verified owner."
-                >
-                  Closing Transaction
-                  <Info className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+          {/* One row per on-chain transaction (initial report, optional match, optional claim) */}
+          {chainRecords.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  On-chain records ({chainRecords.length})
                 </span>
-                <code
-                  className="rounded-md border border-green-600/30 bg-green-50 px-2.5 py-1 text-xs font-mono font-bold text-green-800 select-all"
-                  title={closingTxHash ?? undefined}
+                <span
+                  className="inline-flex text-slate-400"
+                  title="Each hash is a separate blockchain transaction. Use Explorer on each card to verify that transaction."
                 >
-                  {displayClosingHash}
-                </code>
+                  <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                </span>
               </div>
-            </>
-          ) : null}
+              <ol className="space-y-3">
+                {chainRecords.map((rec, index) => (
+                  <li
+                    key={rec.key}
+                    className="rounded-lg border-2 border-black/10 bg-white/90 p-3 shadow-[2px_2px_0_0_rgba(0,0,0,0.06)]"
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          Step {index + 1} · {rec.title}
+                        </p>
+                        <p className="text-xs leading-snug text-slate-600">{rec.description}</p>
+                      </div>
+                      <a
+                        href={explorerTxUrl(rec.hash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border-2 border-black bg-emerald-600/10 px-2.5 py-1.5 text-xs font-black text-emerald-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition hover:bg-emerald-600/20"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                        Explorer
+                      </a>
+                    </div>
+                    <code
+                      className={`mt-2 block w-full break-all rounded-md border px-2 py-1.5 text-left text-[11px] font-mono font-bold select-all ${rec.codeClass}`}
+                      title={rec.hash}
+                    >
+                      {shortTx(rec.hash)}
+                    </code>
+                  </li>
+                ))}
+              </ol>
+              {chainRecords.length > 1 ? (
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  Tip: verify each step separately — the explorer opens that exact transaction, not the whole history in one
+                  view.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm font-medium text-slate-600">No blockchain transaction is stored for this report yet.</p>
+          )}
 
           {/* Event date row */}
           {formattedEventDate ? (
@@ -284,16 +341,16 @@ export function BlockchainReceipt({
           ) : null}
         </div>
 
-        {/* CTA: Verify on Explorer */}
-        {txHash ? (
+        {/* Primary CTA when there is exactly one on-chain record (keeps a single obvious action) */}
+        {chainRecords.length === 1 ? (
           <a
-            href={`http://139.180.140.143/tx/${txHash}`}
+            href={explorerTxUrl(chainRecords[0].hash)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2.5 rounded-xl border-2 border-black bg-emerald-600 px-6 py-3.5 text-sm font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:bg-emerald-700 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
           >
             <ExternalLink className="h-4 w-4" aria-hidden />
-            Verify Proof on Blockchain Explorer
+            Verify on blockchain explorer
           </a>
         ) : null}
 

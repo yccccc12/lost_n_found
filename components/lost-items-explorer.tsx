@@ -30,11 +30,11 @@ function aiOnlyEntry(r: AISearchResult): ItemEntry {
   }
 }
 
-type FoundItemsExplorerProps = {
-  initialFoundItems: ItemEntry[]
+type LostItemsExplorerProps = {
+  initialLostItems: ItemEntry[]
 }
 
-export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProps) {
+export function LostItemsExplorer({ initialLostItems }: LostItemsExplorerProps) {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<'browse' | 'ai'>('browse')
   const [loading, setLoading] = useState(false)
@@ -52,7 +52,7 @@ export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProp
       const res = await fetch('/api/ai/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q }),
+        body: JSON.stringify({ query: q, search_status: 'lost' }),
       })
       const data = await res.json().catch(() => ({}))
 
@@ -104,11 +104,12 @@ export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProp
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md border-2 border-black bg-white px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-black">
               <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              AI match
+              AI search
             </span>
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Describe what you lost in your own words. We rank found items by meaning, not only keywords.
+            Describe an item or situation in your own words. We rank <span className="font-semibold text-foreground">lost</span>{' '}
+            reports by meaning, not only keywords — useful if you think something was already reported missing.
           </p>
         </div>
         <SemanticSearchBar
@@ -116,6 +117,7 @@ export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProp
           onChange={setQuery}
           onSubmit={runSearch}
           disabled={loading}
+          placeholder="e.g. black wallet near the library, AirPods case…"
           className="max-w-none"
         />
         <p className="text-xs text-muted-foreground/80">
@@ -138,7 +140,7 @@ export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProp
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-black/30 bg-muted/30 px-4 py-6">
           <Spinner className="h-5 w-5 text-foreground" />
-          <p className="text-sm font-medium text-foreground">Matching your description to found items…</p>
+          <p className="text-sm font-medium text-foreground">Matching your description to lost reports…</p>
         </div>
       ) : null}
 
@@ -157,17 +159,14 @@ export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProp
 
           {aiRows.length === 0 ? (
             <p className="max-w-xl text-muted-foreground">
-              No strong matches yet. Try a different description (e.g. the type of object, color, or where you think you lost it).
+              No strong matches yet. Try different wording (object type, color, building, or date).
             </p>
           ) : (
             <ul className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {aiRows.map(({ entry, ai }) => (
                 <li key={ai.item_id} className="flex flex-col gap-3">
                   <div className="flex justify-end">
-                    <Badge
-                      variant="outline"
-                      className="border-2 border-black bg-amber-100 font-black text-black"
-                    >
+                    <Badge variant="outline" className="border-2 border-black bg-rose-100 font-black text-black">
                       {Math.round(ai.score * 100)}% match
                     </Badge>
                   </div>
@@ -190,16 +189,16 @@ export function FoundItemsExplorer({ initialFoundItems }: FoundItemsExplorerProp
       {mode === 'browse' && !loading ? (
         <>
           <p className="max-w-2xl text-muted-foreground">
-            Items turned in to campus staff or community members. Use AI match above to search by description;
-            browse the grid for everything currently listed as found.
+            Recently reported missing belongings on campus. Use AI search above to explore by description, or browse the full
+            list below. Open a card for details and the blockchain receipt.
           </p>
-          {initialFoundItems.length === 0 ? (
+          {initialLostItems.length === 0 ? (
             <p className="max-w-xl text-muted-foreground">
-              No found items yet. When someone turns something in, it will appear here.
+              No lost reports yet. When someone files a report, it will show up here.
             </p>
           ) : null}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
-            {initialFoundItems.map((item) => (
+            {initialLostItems.map((item) => (
               <ItemCard key={item.id} item={item} href={recordDetailHref(item.id)} />
             ))}
           </div>
