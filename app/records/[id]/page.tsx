@@ -22,8 +22,8 @@ type RecordDoc = {
   event_date?: string | null
   created_at?: string
   status?: string
-  email?: string | null
-  contact_email?: string | null
+  owner_email?: string | null
+  finder_email?: string | null
   image_urls?: string[] | null
   tx_hash?: string | null
   claim_tx_hash?: string | null
@@ -206,9 +206,13 @@ export default function RecordDetailPage() {
     )
   }
 
-  const reporterForOwnerCheck = record.email?.trim() || record.contact_email?.trim()
+  const ownerEmailRaw = record.owner_email?.trim()
+  const finderEmailRaw = record.finder_email?.trim()
   const isOwner = Boolean(
-    sessionEmail && reporterForOwnerCheck && sessionEmail.trim().toLowerCase() === reporterForOwnerCheck.toLowerCase(),
+    sessionEmail && ownerEmailRaw && sessionEmail.trim().toLowerCase() === ownerEmailRaw.toLowerCase(),
+  )
+  const isFinder = Boolean(
+    sessionEmail && finderEmailRaw && sessionEmail.trim().toLowerCase() === finderEmailRaw.toLowerCase(),
   )
   const canClaim = isOwner && record.status === 'found'
   const isLost = record.status === 'lost'
@@ -217,14 +221,23 @@ export default function RecordDetailPage() {
 
   const title = record.name?.trim() || 'Untitled item'
 
-  const reporterEmailRaw = record.email?.trim() || record.contact_email?.trim() || null
-  let reporterDisplay: string | null = null
-  if (reporterEmailRaw) {
+  let ownerDisplay: string | null = null
+  if (ownerEmailRaw) {
     const session = sessionEmail?.trim()
-    if (session && session.toLowerCase() === reporterEmailRaw.toLowerCase()) {
-      reporterDisplay = 'you'
+    if (session && session.toLowerCase() === ownerEmailRaw.toLowerCase()) {
+      ownerDisplay = 'you'
     } else {
-      reporterDisplay = reporterEmailRaw
+      ownerDisplay = ownerEmailRaw
+    }
+  }
+
+  let finderDisplay: string | null = null
+  if (finderEmailRaw && (record.status === 'found' || record.status === 'claimed')) {
+    const session = sessionEmail?.trim()
+    if (session && session.toLowerCase() === finderEmailRaw.toLowerCase()) {
+      finderDisplay = 'you'
+    } else {
+      finderDisplay = finderEmailRaw
     }
   }
 
@@ -238,7 +251,7 @@ export default function RecordDetailPage() {
         <div className="rounded-2xl border-4 border-black bg-gradient-to-br from-orange-50/50 via-white/95 to-sky-50/40 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:p-5">
           <p className="mb-4 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Actions</p>
           <div className="flex flex-wrap items-center justify-start gap-3">
-            {isLost ? (
+            {isLost && !isOwner ? (
               <Button
                 type="button"
                 onClick={handleFoundThisItem}
@@ -332,7 +345,10 @@ export default function RecordDetailPage() {
               status={record.status ?? '—'}
               imageUrls={record.image_urls ?? null}
               eventLabel={eventLabel}
-              reporterDisplay={reporterDisplay}
+              ownerDisplay={ownerDisplay}
+              ownerEmailRaw={ownerEmailRaw}
+              finderDisplay={finderDisplay}
+              finderEmailRaw={finderEmailRaw}
             />
           </>
         )}

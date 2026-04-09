@@ -78,8 +78,14 @@ export type ItemDetailHeroProps = {
   status: string
   imageUrls: string[] | null | undefined
   eventLabel: string
-  /** When set, shown under Reporter — pass `"you"` when the viewer is the submitter (renders as a full sentence). */
-  reporterDisplay?: string | null
+  /** When set, shown under Owner — pass `"you"` when the viewer is the owner (renders as a full sentence). */
+  ownerDisplay?: string | null
+  /** Owner's raw email (used for display when ownerDisplay is 'you') */
+  ownerEmailRaw?: string | null
+  /** When set, shown under Finder — pass `"you"` when the viewer is the finder (renders as a full sentence). */
+  finderDisplay?: string | null
+  /** Finder's raw email (used for display when finderDisplay is 'you') */
+  finderEmailRaw?: string | null
 }
 
 export function ItemDetailHero({
@@ -92,7 +98,10 @@ export function ItemDetailHero({
   status,
   imageUrls,
   eventLabel,
-  reporterDisplay = null,
+  ownerDisplay = null,
+  ownerEmailRaw = null,
+  finderDisplay = null,
+  finderEmailRaw = null,
 }: ItemDetailHeroProps) {
   const urls = imageUrls?.filter((u) => typeof u === 'string' && u.trim().length > 0) ?? []
   const hasImage = urls.length > 0
@@ -124,7 +133,8 @@ export function ItemDetailHero({
       location ||
       formattedEvent ||
       formattedReported ||
-      reporterDisplay ||
+      ownerDisplay ||
+      finderDisplay ||
       description,
   )
 
@@ -198,15 +208,33 @@ export function ItemDetailHero({
                   value={formattedReported}
                 />
               ) : null}
-              {reporterDisplay ? (
+              {ownerDisplay ? (
                 <DetailRow
                   icon={<User strokeWidth={2} />}
-                  label="Reporter"
+                  label="Owner"
                   value={
-                    reporterDisplay === 'you' ? 'You are the reporter.' : reporterDisplay
+                    ownerDisplay === 'you' 
+                      ? `You are the owner (${ownerEmailRaw})` 
+                      : ownerDisplay
                   }
                   valueClassName={
-                    reporterDisplay === 'you'
+                    ownerDisplay === 'you'
+                      ? '!text-[15px] font-semibold normal-case leading-snug text-foreground sm:!text-base'
+                      : 'break-all font-medium'
+                  }
+                />
+              ) : null}
+              {finderDisplay ? (
+                <DetailRow
+                  icon={<User strokeWidth={2} />}
+                  label="Finder"
+                  value={
+                    finderDisplay === 'you' 
+                      ? `You are the finder (${finderEmailRaw})` 
+                      : finderDisplay
+                  }
+                  valueClassName={
+                    finderDisplay === 'you'
                       ? '!text-[15px] font-semibold normal-case leading-snug text-foreground sm:!text-base'
                       : 'break-all font-medium'
                   }
