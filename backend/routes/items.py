@@ -144,6 +144,34 @@ def get_items():
 
 
 # -----------------------------
+# Pending claims for owner (lost → found, not yet claimed)
+# -----------------------------
+@router.get("/owner/pending-claims")
+def get_pending_claims_for_owner(email: str):
+    """
+    Items the user originally reported (email) that are now status 'found' (matched, ready to claim).
+    """
+    owner = _form_optional_str(email)
+    if not owner:
+        raise HTTPException(status_code=400, detail="email is required")
+
+    items_out: list[dict] = []
+    for item in items_collection.find(
+        {"email": owner, "status": "found", "is_redundant": {"$ne": True}}
+    ).sort("matched_at", -1):
+        mid = item.get("matched_at")
+        items_out.append(
+            {
+                "_id": str(item["_id"]),
+                "name": item.get("name") or "—",
+                "matched_at": mid.isoformat() if isinstance(mid, datetime) else None,
+            }
+        )
+
+    return {"items": items_out, "count": len(items_out)}
+
+
+# -----------------------------
 # Get Items by Status
 # -----------------------------
 @router.get("/{status}")
