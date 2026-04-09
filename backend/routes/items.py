@@ -21,11 +21,10 @@ class Item(BaseModel):
     description: Optional[str] = None
     location: Optional[str] = None
     event_date: Optional[str] = None
-    email: Optional[str] = Field(
+    owner_email: Optional[str] = Field(
         default=None,
         description="Submitter email (session); included in blockchain hash when set.",
     )
-    contact_email: Optional[str] = None
     status: Literal["lost", "found", "claimed"]
     image_urls: list[str] = []
 
@@ -39,7 +38,7 @@ class ClaimRequest(BaseModel):
 def _form_optional_str(value: object | None) -> Optional[str]:
     if value is None:
         return None
-    s = str(value).strip()
+    s = str(value).strip().lower()
     return s or None
 
 
@@ -55,11 +54,10 @@ async def create_item(
     description: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     event_date: Optional[str] = Form(None),
-    email: Optional[str] = Form(
+    owner_email: Optional[str] = Form(
         None,
         description="Submitter email (e.g. from session); included in blockchain hash when set.",
     ),
-    contact_email: Optional[str] = Form(None),
     status: Literal["lost", "found"] = Form(..., description="Lost or found"),
 ):
     """Create an item. Text fields use Form(); files are read from the same multipart body.
@@ -85,8 +83,7 @@ async def create_item(
     desc = _form_optional_str(description)
     loc = _form_optional_str(location)
     ev = _form_optional_str(event_date)
-    session_email = _form_optional_str(email)
-    em = _form_optional_str(contact_email)
+    session_email = _form_optional_str(owner_email)
 
     item = Item(
         name=name.strip(),
@@ -94,8 +91,7 @@ async def create_item(
         description=desc,
         location=loc,
         event_date=ev,
-        email=session_email,
-        contact_email=em,
+        owner_email=session_email,
         status=status_val,
         image_urls=urls,
     )
@@ -109,7 +105,7 @@ async def create_item(
         "description": desc,
         "location": loc,
         "event_date": ev,
-        "email": session_email,
+        "owner_email": session_email,
     }
 
     proof = store_proof(hash_input)
@@ -149,7 +145,7 @@ def get_items():
 @router.get("/owner/pending-claims")
 def get_pending_claims_for_owner(email: str):
     """
-    Items the user originally reported (email) that are now status 'found' (matched, ready to claim).
+    Items the user originally reported (owner_email) that are now status 'found' (matched, ready to claim).
     """
     owner = _form_optional_str(email)
     if not owner:
@@ -157,7 +153,7 @@ def get_pending_claims_for_owner(email: str):
 
     items_out: list[dict] = []
     for item in items_collection.find(
-        {"email": owner, "status": "found", "is_redundant": {"$ne": True}}
+        {"owner_email": owner, "status": "found", "is_redundant": {"$ne": True}}
     ).sort("matched_at", -1):
         mid = item.get("matched_at")
         items_out.append(
@@ -216,7 +212,7 @@ def match_item(lost_item_id: str, body: MatchRequest):
     if lost_item.get("status") != "lost":
         raise HTTPException(status_code=400, detail="Only 'lost' items can be matched")
 
-    if body.finder_email and lost_item.get("email") == body.finder_email:
+    if body.finder_email and lost_item.get("owner_email") == body.finder_email.lower().strip():
         raise HTTPException(status_code=400, detail="You cannot match an item you originally reported as lost.")
 
     # Rebuild input for blockchain
@@ -226,12 +222,9 @@ def match_item(lost_item_id: str, body: MatchRequest):
         "description": lost_item.get("description"),
         "location": lost_item.get("location"),
         "event_date": lost_item.get("event_date"),
-        "email": lost_item.get("email"),
+        "owner_email": lost_item.get("owner_email"),
         "event": "matched"
     }
-
-    if body.found_item_id:
-        hash_input["matched_with_found_id"] = body.found_item_id
 
     proof = store_proof(hash_input)
 
@@ -241,7 +234,7 @@ def match_item(lost_item_id: str, body: MatchRequest):
             "status": "found", 
             "matched_at": datetime.utcnow(),
             "matched_tx_hash": proof["tx_hash"],
-            "matched_with_found_id": body.found_item_id
+            "finder_email": body.finder_email
         }}
     )
 
@@ -250,8 +243,7 @@ def match_item(lost_item_id: str, body: MatchRequest):
         items_collection.update_one(
             {"_id": ObjectId(body.found_item_id)},
             {"$set": {
-                "is_redundant": True,
-                "matched_with_lost_id": lost_item_id
+                "is_redundant": True
             }}
         )
 
@@ -273,7 +265,7 @@ def claim_item(item_id: str, body: ClaimRequest):
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    if item.get("email") != body.claimer_email:
+    if item.get("owner_email") != body.claimer_email.lower().strip():
         raise HTTPException(status_code=403, detail="You are not authorized to claim this item. Email mismatch.")
 
     if item.get("status") != "found":
@@ -286,7 +278,7 @@ def claim_item(item_id: str, body: ClaimRequest):
         "description": item.get("description"),
         "location": item.get("location"),
         "event_date": item.get("event_date"),
-        "email": item.get("email"),
+        "owner_email": item.get("owner_email"),
         "event": "claimed"
     }
 
@@ -357,7 +349,7 @@ def verify_item(item_id: str):
         "description": item.get("description"),
         "location": item.get("location"),
         "event_date": item.get("event_date"),
-        "email": item.get("email"),
+        "owner_email": item.get("owner_email"),
     }
 
     result = verify_proof(tx_hash, hash_input)

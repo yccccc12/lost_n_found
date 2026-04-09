@@ -22,7 +22,7 @@ def normalize(data: dict) -> dict:
     Ensure consistent structure for hashing
     - Remove None / empty values
     - Keep only relevant fields
-    - Include "email" only when non-empty so legacy items (no email) still verify.
+    - Include "owner_email" only when non-empty so legacy items (no owner_email) still verify.
     """
     out = {
         "name": (data.get("name") or "").strip(),
@@ -31,9 +31,9 @@ def normalize(data: dict) -> dict:
         "location": (data.get("location") or "").strip(),
         "event_date": (data.get("event_date") or "").strip(),
     }
-    email = (data.get("email") or "").strip()
-    if email:
-        out["email"] = email
+    owner_email = (data.get("owner_email") or "").strip()
+    if owner_email:
+        out["owner_email"] = owner_email
     return out
 
 
