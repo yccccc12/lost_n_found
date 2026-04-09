@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
 const btnOutline =
   'rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
 const cardSurface =
@@ -115,16 +117,23 @@ export function LandingPage() {
               anytime.
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Button asChild variant="outline" className={btnOutline}>
-                <Link href="/found">Browse found items</Link>
-              </Button>
               <Button
                 asChild
                 className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border-2 border-black bg-slate-900 px-4 text-sm font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-900"
               >
-                <Link href="/report">
+                <Link href="/report?type=lost">
                   <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                  Report Lost Item
+                  Report Lost Item - I lost something
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className={cn(btnOutline, "bg-white text-black hover:bg-slate-100")}
+              >
+                <Link href="/report?type=found">
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                  Report Found Item - I found something
                 </Link>
               </Button>
             </div>
@@ -253,14 +262,13 @@ export function LandingPage() {
                   asChild
                   className={`${btnOutline} bg-slate-900 text-white hover:bg-slate-900`}
                 >
-                  <Link href="/report">Submit lost report</Link>
+                  <Link href="/report?type=lost">Report Lost - I lost something</Link>
                 </Button>
                 <Button
                   asChild
-                  variant="outline"
-                  className={`${btnOutline} bg-white/90 text-slate-900 hover:bg-white`}
+                  className={`${btnOutline} bg-white text-slate-900 hover:bg-white`}
                 >
-                  <Link href="/map">View campus map</Link>
+                  <Link href="/report?type=found">Report Found - I found something</Link>
                 </Button>
               </div>
             </div>

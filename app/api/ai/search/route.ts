@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { getSessionEmailFromCookies } from '@/lib/auth-session'
 
 const bodySchema = z.object({
   query: z.string().min(1, 'Enter a search description'),
+  search_status: z.string().optional(),
 })
 
 export async function POST(request: Request) {
   const json = await request.json().catch(() => null)
   const parsed = bodySchema.safeParse(json)
+
+  const sessionEmail = await getSessionEmailFromCookies()
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -27,10 +31,18 @@ export async function POST(request: Request) {
   const url = new URL('ai/search', backendEndpoint.endsWith('/') ? backendEndpoint : `${backendEndpoint}/`).toString()
 
   try {
+    const payload: any = { query: parsed.data.query }
+    if (parsed.data.search_status) {
+      payload.search_status = parsed.data.search_status
+    }
+    if (sessionEmail) {
+      payload.exclude_email = sessionEmail
+    }
+    
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: parsed.data.query }),
+      body: JSON.stringify(payload),
       cache: 'no-store',
     })
 

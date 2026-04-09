@@ -12,6 +12,19 @@ export default function RecordDetailPage() {
     const router = useRouter();
     const [record, setRecord] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+    const [claimLoading, setClaimLoading] = useState(false);
+
+    useEffect(() => {
+        fetch('/api/auth/session')
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    setSessionEmail(data.email);
+                }
+            })
+            .catch(err => console.error("Session error:", err));
+    }, []);
 
     useEffect(() => {
         if (!id) return;
@@ -60,6 +73,31 @@ export default function RecordDetailPage() {
         );
     }
 
+    async function handleClaim() {
+        if (!record || !record._id) return;
+        setClaimLoading(true);
+        try {
+            const res = await fetch(`/api/items/${record._id}/claim`, {
+                method: 'PUT',
+            });
+            if (res.ok) {
+                // Optimistically update status
+                setRecord({ ...record, status: 'claimed' });
+                alert("Successfully claimed!");
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || "Failed to claim item.");
+            }
+        } catch {
+            alert("Error claiming item.");
+        } finally {
+            setClaimLoading(false);
+        }
+    }
+
+    const isOwner = sessionEmail && record.email && sessionEmail === record.email;
+    const canClaim = isOwner && record.status === 'found';
+
     return (
         <CampusShell title="Record Details" showBack backHref="/records">
             <div className="max-w-2xl mx-auto">
@@ -74,7 +112,19 @@ export default function RecordDetailPage() {
                     description={record.description || null}
                     location={record.location || null}
                     imageUrls={record.image_urls?.length ? record.image_urls : null}
-                />
+                    closingTxHash={record.claim_tx_hash || null}
+                >
+                    {canClaim && (
+                        <Button
+                            onClick={handleClaim}
+                            disabled={claimLoading}
+                            variant="outline"
+                            className="rounded-xl border-2 border-green-600 bg-green-50 text-green-700 font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-green-100 sm:w-fit"
+                        >
+                            {claimLoading ? "Confirming..." : "Mark as Claimed ✅"}
+                        </Button>
+                    )}
+                </BlockchainReceipt>
             </div>
         </CampusShell>
     );

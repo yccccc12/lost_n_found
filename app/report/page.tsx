@@ -8,10 +8,18 @@ export const metadata: Metadata = {
     'Report a lost or found item on campus with details; photos are optional. Demo — submissions are not saved.',
 }
 
-export default function ReportPage() {
+interface PageProps {
+  searchParams: Promise<{ type?: string }>
+}
+
+export default async function ReportPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const initialType = params.type === 'found' ? 'found' : 'lost'
+  const title = initialType === 'lost' ? 'Report a lost item' : 'Report a found item'
+
   return (
-    <CampusShell title="Report an item" showBack backHref="/">
-      <ReportItemForm />
+    <CampusShell title={title} showBack backHref="/">
+      <ReportItemForm initialType={initialType} />
     </CampusShell>
   )
 }

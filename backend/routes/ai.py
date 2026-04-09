@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import Optional
 
 from db.mongodb import items_collection
 from services.AI_semantic_search import find_best_matches
@@ -11,6 +12,8 @@ router = APIRouter(prefix="/ai", tags=["AI"])
 
 class SearchQuery(BaseModel):
     query: str
+    search_status: str = "found"  # defaults to 'found', but finders can pass 'lost'
+    exclude_email: Optional[str] = None
 
 
 class ParseReportBody(BaseModel):
@@ -35,7 +38,12 @@ def parse_report(body: ParseReportBody):
 @router.post("/search")
 def search_items(body: SearchQuery):
     found_items = []
-    for item in items_collection.find({"status": "found"}):
+    
+    query_filter = {"status": body.search_status}
+    if body.exclude_email:
+        query_filter["email"] = {"$ne": body.exclude_email}
+        
+    for item in items_collection.find(query_filter):
         item["_id"] = str(item["_id"])
         found_items.append(item)
 

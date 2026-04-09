@@ -15,6 +15,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 interface BlockchainReceiptProps {
   /** The real blockchain transaction hash (0x-prefixed) */
   txHash?: string | null
+  /** The closing transaction hash (when claimed) */
+  closingTxHash?: string | null
   /** The MongoDB document ID */
   itemId?: string | null
   /** Item name for extra context */
@@ -39,6 +41,7 @@ interface BlockchainReceiptProps {
 
 export function BlockchainReceipt({
   txHash,
+  closingTxHash,
   itemId,
   itemName,
   reportType,
@@ -52,6 +55,10 @@ export function BlockchainReceipt({
 }: BlockchainReceiptProps) {
   const displayHash = txHash
     ? `${txHash.slice(0, 10)}…${txHash.slice(-8)}`
+    : null
+
+  const displayClosingHash = closingTxHash
+    ? `${closingTxHash.slice(0, 10)}…${closingTxHash.slice(-8)}`
     : null
 
   let statusLabel = 'Reported'
@@ -220,7 +227,7 @@ export function BlockchainReceipt({
                 className="inline-flex items-center gap-1 text-sm font-bold text-slate-700 cursor-help"
                 title="A unique, permanent digital fingerprint. It proves exactly when this item was reported and guarantees the details cannot be tampered with."
               >
-                Transaction ID
+                {reportType === 'claimed' && displayClosingHash ? "Report Transaction" : "Transaction ID"}
                 <Info className="h-3.5 w-3.5 text-slate-400" aria-hidden />
               </span>
               <code
@@ -230,6 +237,28 @@ export function BlockchainReceipt({
                 {displayHash}
               </code>
             </div>
+          ) : null}
+
+          {/* Closing Transaction row */}
+          {reportType === 'claimed' && displayClosingHash ? (
+            <>
+              <div className="h-px bg-black/10" />
+              <div className="flex items-center justify-between gap-3">
+                <span
+                  className="inline-flex items-center gap-1 text-sm font-bold text-slate-700 cursor-help"
+                  title="The final fingerprint that legally anchors the handover of this property to the verified owner."
+                >
+                  Closing Transaction
+                  <Info className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                </span>
+                <code
+                  className="rounded-md border border-green-600/30 bg-green-50 px-2.5 py-1 text-xs font-mono font-bold text-green-800 select-all"
+                  title={closingTxHash ?? undefined}
+                >
+                  {displayClosingHash}
+                </code>
+              </div>
+            </>
           ) : null}
 
           {/* Event date row */}

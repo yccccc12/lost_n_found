@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ImagePlus, Loader2, Mic, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,12 +29,14 @@ function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null
 }
 
-export function ReportItemForm() {
+export function ReportItemForm({ initialType = 'lost' }: { initialType?: 'lost' | 'found' }) {
   const formId = useId()
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const speechRef = useRef<SpeechRecognition | null>(null)
+  const matchesRef = useRef<HTMLDivElement>(null)
 
-  const [reportType, setReportType] = useState<'lost' | 'found'>('lost')
+  const [reportType, setReportType] = useState<'lost' | 'found'>(initialType)
   const [category, setCategory] = useState('essentials')
   const [itemName, setItemName] = useState('')
   const [when, setWhen] = useState('')
@@ -54,6 +57,12 @@ export function ReportItemForm() {
   const [blockchainHash, setBlockchainHash] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
   const [reportedAt, setReportedAt] = useState<string | null>(null)
+
+  const [matchedLostItems, setMatchedLostItems] = useState<any[]>([])
+  const [searchMatchesLoading, setSearchMatchesLoading] = useState(false)
+  const [matchConfirmedId, setMatchConfirmedId] = useState<string | null>(null)
+  const [matchConfirmLoadingId, setMatchConfirmLoadingId] = useState<string | null>(null)
+  const [countdown, setCountdown] = useState<number | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -141,7 +150,11 @@ export function ReportItemForm() {
     setTxHash(null)
     setReportedAt(null)
     setSubmitError(null)
-    setReportType('lost')
+    setMatchedLostItems([])
+    setMatchConfirmedId(null)
+    setMatchConfirmLoadingId(null)
+    setCountdown(null)
+    setReportType(initialType)
     setCategory('essentials')
     setItemName('')
     setWhen('')
@@ -238,29 +251,178 @@ export function ReportItemForm() {
     }
   }
 
+  useEffect(() => {
+    if (submitted && reportType === 'found') {
+      setSearchMatchesLoading(true)
+      const queryStr = `${itemName} ${details} ${where}`.trim()
+      fetch('/api/ai/search', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: queryStr, search_status: "lost" })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.results) setMatchedLostItems(data.results.slice(0, 3))
+          setSearchMatchesLoading(false)
+        })
+        .catch(() => {
+          setSearchMatchesLoading(false)
+        })
+    }
+  }, [submitted, reportType, itemName, details, where])
+
+  useEffect(() => {
+    if (submitted && reportType === 'found' && matchedLostItems.length > 0) {
+      if (!matchConfirmedId) {
+        setTimeout(() => {
+          matchesRef.current?.scrollIntoView({ behavior: 'smooth' })
+        }, 500)
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+          e.preventDefault()
+          e.returnValue = ''
+        }
+        
+        // Intercept clicks on links for Next.js App Router soft navigations
+        const handleLinkClick = (e: MouseEvent) => {
+          const target = e.target as HTMLElement
+          const anchor = target.closest('a')
+          if (anchor && anchor.href && !anchor.hasAttribute('download')) {
+             const confirmLeave = window.confirm("You have potential owner matches waiting!\n\nAre you sure you want to leave without checking them?")
+             if (!confirmLeave) {
+                e.preventDefault()
+                e.stopPropagation()
+             }
+          }
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        document.addEventListener('click', handleLinkClick, { capture: true })
+        
+        return () => {
+          window.removeEventListener('beforeunload', handleBeforeUnload)
+          document.removeEventListener('click', handleLinkClick, { capture: true })
+        }
+      }
+    }
+  }, [submitted, reportType, matchedLostItems, matchConfirmedId])
+
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (countdown === 0) {
+      router.push('/records')
+    }
+  }, [countdown, router])
+
+  async function handleConfirmMatch(lostItemId: string) {
+    setMatchConfirmLoadingId(lostItemId)
+    try {
+      const res = await fetch(`/api/items/${lostItemId}/match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ found_item_id: createdItemId }),
+      })
+      if (res.ok) {
+        setMatchConfirmedId(lostItemId)
+        setCountdown(5)
+      } else {
+        alert("Failed to confirm match. Please try again.")
+      }
+    } catch {
+      alert("Error confirming match.")
+    } finally {
+      setMatchConfirmLoadingId(null)
+    }
+  }
+
   if (submitted) {
     return (
-      <BlockchainReceipt
-        txHash={txHash}
-        itemId={createdItemId}
-        itemName={itemName}
-        reportType={reportType}
-        eventDate={when}
-        reportedAt={reportedAt}
-        category={category}
-        description={details}
-        location={where}
-        imageUrls={previews.length ? previews : null}
-      >
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:w-fit"
-          onClick={resetAfterSubmit}
+      <div className="space-y-8">
+        <BlockchainReceipt
+          txHash={txHash}
+          itemId={createdItemId}
+          itemName={itemName}
+          reportType={reportType}
+          eventDate={when}
+          reportedAt={reportedAt}
+          category={category}
+          description={details}
+          location={where}
+          imageUrls={previews.length ? previews : null}
         >
-          Submit another report
-        </Button>
-      </BlockchainReceipt>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:w-fit"
+            onClick={() => {
+              if (reportType === 'found' && matchedLostItems.length > 0 && !matchConfirmedId) {
+                if (!window.confirm("You have potential owner matches waiting!\n\nAre you sure you want to ignore them and submit another report?")) {
+                  return;
+                }
+              }
+              resetAfterSubmit()
+            }}
+          >
+            Submit another report
+          </Button>
+        </BlockchainReceipt>
+        
+        {reportType === 'found' && (
+          <div className="space-y-4" ref={matchesRef}>
+            <h3 className="text-xl font-black uppercase text-slate-900 border-b-2 border-black pb-2">
+              Potential Owners
+            </h3>
+            {searchMatchesLoading ? (
+              <p className="animate-pulse font-medium text-amber-700">Searching for lost reports...</p>
+            ) : matchedLostItems.length > 0 ? (
+              <div className="grid gap-4">
+                {matchedLostItems.map((match) => (
+                  <div key={match.item_id} className="rounded-xl border-2 border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-lg">{match.name}</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full border border-black bg-slate-100">
+                          {Math.round(match.score * 100)}% Match
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-600 line-clamp-2">{match.reason}</p>
+                    </div>
+                    {matchConfirmedId === match.item_id ? (
+                      <Button disabled variant="outline" className="rounded-xl border-2 border-green-600 bg-green-50 text-green-700 font-bold shrink-0">
+                        Match Confirmed ✅
+                      </Button>
+                    ) : matchConfirmedId ? (
+                      <Button disabled variant="outline" className="rounded-xl border-2 border-gray-300 text-gray-400 font-bold shrink-0">
+                        Ignored
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => handleConfirmMatch(match.item_id)} 
+                        disabled={matchConfirmLoadingId === match.item_id}
+                        className="rounded-xl border-2 border-black font-bold shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all bg-amber-300 text-black hover:bg-amber-400"
+                      >
+                        {matchConfirmLoadingId === match.item_id ? "Matching..." : "Confirm Match"}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="font-medium text-slate-600">No matching lost reports found yet.</p>
+            )}
+
+            {countdown !== null && countdown >= 0 && (
+              <div className="mt-6 rounded-xl border-2 border-green-600 bg-green-50 p-6 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <h4 className="text-2xl font-black text-green-800 mb-2">Match Confirmed! 🎉</h4>
+                <p className="font-medium text-green-700">Thank you for securing this item. The original owner can now claim it.</p>
+                <p className="font-bold text-slate-600 mt-4">You will be directed to main page in {countdown} seconds...</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -360,38 +522,10 @@ export function ReportItemForm() {
         ) : null}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">1. Report type</h2>
-        <RadioGroup
-          value={reportType}
-          onValueChange={(v) => setReportType(v as 'lost' | 'found')}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-        >
-          <label
-            htmlFor={`${formId}-lost`}
-            className={cn(
-              'flex cursor-pointer items-center gap-3 rounded-xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-colors hover:bg-orange-50/50',
-              reportType === 'lost' && 'bg-orange-100/80',
-            )}
-          >
-            <RadioGroupItem value="lost" id={`${formId}-lost`} className="border-2 border-black" />
-            <span className="font-bold">I lost something</span>
-          </label>
-          <label
-            htmlFor={`${formId}-found`}
-            className={cn(
-              'flex cursor-pointer items-center gap-3 rounded-xl border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-colors hover:bg-sky-50/50',
-              reportType === 'found' && 'bg-sky-100/80',
-            )}
-          >
-            <RadioGroupItem value="found" id={`${formId}-found`} className="border-2 border-black" />
-            <span className="font-bold">I found something</span>
-          </label>
-        </RadioGroup>
-      </section>
+      {/* Section 1 removed as it is now determined by the initial report flow */}
 
       <section className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">2. Item details</h2>
+        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">1. Item details</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor={`${formId}-name`} className="font-bold">
@@ -442,7 +576,7 @@ export function ReportItemForm() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">3. Location</h2>
+        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">2. Location</h2>
         <div className="space-y-2">
           <Label htmlFor={`${formId}-where`} className="font-bold">
             Building or area <span className="text-destructive">*</span>
@@ -460,7 +594,7 @@ export function ReportItemForm() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">4. Description</h2>
+        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">3. Description</h2>
         <div className="space-y-2">
           <Label htmlFor={`${formId}-details`} className="font-bold">
             Details <span className="text-destructive">*</span>
@@ -479,7 +613,7 @@ export function ReportItemForm() {
 
       <section className="space-y-4">
         <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">
-          5. Photos <span className="font-semibold normal-case text-muted-foreground">(optional)</span>
+          4. Photos <span className="font-semibold normal-case text-muted-foreground">(optional)</span>
         </h2>
         <p className="text-sm text-muted-foreground">
           Add photos if you have them — they help others recognize the item, but you can submit without images. Up to{' '}
@@ -553,7 +687,7 @@ export function ReportItemForm() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">6. Contact (optional)</h2>
+        <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">5. Contact (optional)</h2>
         <div className="space-y-2">
           <Label htmlFor={`${formId}-email`} className="font-bold">
             Campus email

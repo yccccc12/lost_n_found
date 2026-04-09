@@ -29,6 +29,13 @@ class Item(BaseModel):
     status: Literal["lost", "found", "claimed"]
     image_urls: list[str] = []
 
+class MatchRequest(BaseModel):
+    found_item_id: Optional[str] = None
+    finder_email: Optional[str] = None
+
+class ClaimRequest(BaseModel):
+    claimer_email: str
+
 def _form_optional_str(value: object | None) -> Optional[str]:
     if value is None:
         return None
@@ -130,7 +137,7 @@ async def create_item(
 @router.get("/")
 def get_items():
     items = []
-    for item in items_collection.find():
+    for item in items_collection.find({"is_redundant": {"$ne": True}}):
         item["_id"] = str(item["_id"])
         items.append(item)
     return items
@@ -142,7 +149,7 @@ def get_items():
 @router.get("/{status}")
 def get_items_by_status(status: Literal["lost", "found"]):
     items = []
-    for item in items_collection.find({"status": status}):
+    for item in items_collection.find({"status": status, "is_redundant": {"$ne": True}}):
         item["_id"] = str(item["_id"])
         items.append(item)
     return items
@@ -160,6 +167,112 @@ def get_item(item_id: str):
         raise HTTPException(status_code=404, detail="Item not found")
     item["_id"] = str(item["_id"])
     return item
+
+
+# -----------------------------
+# Match Found Item -> Lost Item
+# -----------------------------
+@router.post("/match/{lost_item_id}")
+def match_item(lost_item_id: str, body: MatchRequest):
+    """
+    Called by a finder whose new 'found' item matched an existing 'lost' item.
+    Moves the original 'lost' item's status to 'found' (ready for claim).
+    """
+    if not ObjectId.is_valid(lost_item_id):
+        raise HTTPException(status_code=400, detail="Invalid lost item ID")
+
+    lost_item = items_collection.find_one({"_id": ObjectId(lost_item_id)})
+    if not lost_item:
+        raise HTTPException(status_code=404, detail="Lost item not found")
+
+    if lost_item.get("status") != "lost":
+        raise HTTPException(status_code=400, detail="Only 'lost' items can be matched")
+
+    if body.finder_email and lost_item.get("email") == body.finder_email:
+        raise HTTPException(status_code=400, detail="You cannot match an item you originally reported as lost.")
+
+    # Rebuild input for blockchain
+    hash_input = {
+        "name": lost_item.get("name"),
+        "category": lost_item.get("category"),
+        "description": lost_item.get("description"),
+        "location": lost_item.get("location"),
+        "event_date": lost_item.get("event_date"),
+        "email": lost_item.get("email"),
+        "event": "matched"
+    }
+
+    if body.found_item_id:
+        hash_input["matched_with_found_id"] = body.found_item_id
+
+    proof = store_proof(hash_input)
+
+    items_collection.update_one(
+        {"_id": ObjectId(lost_item_id)},
+        {"$set": {
+            "status": "found", 
+            "matched_at": datetime.utcnow(),
+            "matched_tx_hash": proof["tx_hash"],
+            "matched_with_found_id": body.found_item_id
+        }}
+    )
+
+    # Hide the redundant found item from the public list so it doesn't clutter the feed
+    if body.found_item_id and ObjectId.is_valid(body.found_item_id):
+        items_collection.update_one(
+            {"_id": ObjectId(body.found_item_id)},
+            {"$set": {
+                "is_redundant": True,
+                "matched_with_lost_id": lost_item_id
+            }}
+        )
+
+    return {"message": "Item successfully matched and secured", "tx_hash": proof["tx_hash"]}
+
+
+# -----------------------------
+# Claim Found Item
+# -----------------------------
+@router.put("/claim/{item_id}")
+def claim_item(item_id: str, body: ClaimRequest):
+    """
+    Called by the actual owner to claim a 'found' item.
+    """
+    if not ObjectId.is_valid(item_id):
+        raise HTTPException(status_code=400, detail="Invalid item ID")
+
+    item = items_collection.find_one({"_id": ObjectId(item_id)})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    if item.get("email") != body.claimer_email:
+        raise HTTPException(status_code=403, detail="You are not authorized to claim this item. Email mismatch.")
+
+    if item.get("status") != "found":
+        raise HTTPException(status_code=400, detail="Only 'found' items can be claimed")
+
+    # Record the claim on-chain
+    hash_input = {
+        "name": item.get("name"),
+        "category": item.get("category"),
+        "description": item.get("description"),
+        "location": item.get("location"),
+        "event_date": item.get("event_date"),
+        "email": item.get("email"),
+        "event": "claimed"
+    }
+
+    proof = store_proof(hash_input)
+
+    items_collection.update_one(
+        {"_id": ObjectId(item_id)},
+        {"$set": {
+            "status": "claimed", 
+            "claimed_at": datetime.utcnow(),
+            "claim_tx_hash": proof["tx_hash"]
+        }}
+    )
+    return {"message": "Item successfully claimed", "tx_hash": proof["tx_hash"]}
 
 
 # -----------------------------
