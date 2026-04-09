@@ -282,11 +282,11 @@ export function BlockchainReceipt({
                     className="rounded-lg border-2 border-black/10 bg-white/90 p-3 shadow-[2px_2px_0_0_rgba(0,0,0,0.06)]"
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                           Step {index + 1} · {rec.title}
                         </p>
-                        <p className="text-xs leading-snug text-slate-600">{rec.description}</p>
+                        <p className="text-sm leading-snug text-slate-600">{rec.description}</p>
                       </div>
                       <a
                         href={explorerTxUrl(rec.hash)}
@@ -295,7 +295,7 @@ export function BlockchainReceipt({
                         className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border-2 border-black bg-emerald-600/10 px-2.5 py-1.5 text-xs font-black text-emerald-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition hover:bg-emerald-600/20"
                       >
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                        Explorer
+                        Verify on blockchain explorer
                       </a>
                     </div>
                     <code
@@ -341,18 +341,6 @@ export function BlockchainReceipt({
           ) : null}
         </div>
 
-        {/* Primary CTA when there is exactly one on-chain record (keeps a single obvious action) */}
-        {chainRecords.length === 1 ? (
-          <a
-            href={explorerTxUrl(chainRecords[0].hash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2.5 rounded-xl border-2 border-black bg-emerald-600 px-6 py-3.5 text-sm font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:bg-emerald-700 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
-          >
-            <ExternalLink className="h-4 w-4" aria-hidden />
-            Verify on blockchain explorer
-          </a>
-        ) : null}
 
         {/* Slot for extra actions (e.g. "Submit another report", "Back" buttons) */}
         {children}

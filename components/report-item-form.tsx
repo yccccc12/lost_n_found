@@ -359,10 +359,10 @@ export function ReportItemForm({
     if (countdown !== null && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
-    } else if (countdown === 0) {
-      router.push('/records')
+    } else if (countdown === 0 && matchConfirmedId) {
+      router.push(`/records/${matchConfirmedId}`)
     }
-  }, [countdown, router])
+  }, [countdown, matchConfirmedId, router])
 
   async function handleConfirmMatch(lostItemId: string) {
     setMatchConfirmLoadingId(lostItemId)

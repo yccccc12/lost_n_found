@@ -12,12 +12,12 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData()
-  // Do not trust client-supplied `email` for hashing; only the session cookie may set it.
-  formData.delete('email')
+  // Do not trust client-supplied `owner_email` for hashing; only the session cookie may set it.
+  formData.delete('owner_email')
 
   const sessionEmail = await getSessionEmailFromCookies()
   if (sessionEmail) {
-    formData.set('email', sessionEmail)
+    formData.set('owner_email', sessionEmail)
   }
 
   const base = backendEndpoint.endsWith('/') ? backendEndpoint : `${backendEndpoint}/`

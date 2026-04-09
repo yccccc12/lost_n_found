@@ -102,7 +102,6 @@ export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [pendingClaims, setPendingClaims] = useState<PendingClaimItem[]>([])
-  const [pendingPoll, setPendingPoll] = useState(0)
 
   const loadPendingClaims = useCallback(async () => {
     try {
@@ -153,23 +152,9 @@ export function SiteHeader() {
       setPendingClaims([])
       return
     }
+    // Fetch pending claims once when email is set/changes
     void loadPendingClaims()
-  }, [email, pendingPoll, loadPendingClaims])
-
-  useEffect(() => {
-    if (!email) return
-    const id = window.setInterval(() => {
-      setPendingPoll((n) => n + 1)
-    }, 60_000)
-    return () => window.clearInterval(id)
-  }, [email])
-
-  useEffect(() => {
-    if (!email) return
-    const onFocus = () => setPendingPoll((n) => n + 1)
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [email])
+  }, [email, loadPendingClaims])
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -241,7 +226,7 @@ export function SiteHeader() {
                 <Link href="/report?type=found">Found items</Link>
               </DropdownMenuItem>
             </HeaderNavDropdown>
-            <Link href="/records">Blockchain Records</Link>
+            <Link href="/records">Lost and Found Records</Link>
           </nav>
         </div>
 

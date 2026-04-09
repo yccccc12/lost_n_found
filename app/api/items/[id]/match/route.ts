@@ -26,7 +26,7 @@ export async function POST(
     
     // Attach the session email to the backend request securely
     if (sessionEmail) {
-      body.finder_email = sessionEmail
+      body.finder_email = sessionEmail.toLowerCase().trim()
     }
     
     const res = await fetch(url, {

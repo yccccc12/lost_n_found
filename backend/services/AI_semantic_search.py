@@ -1,6 +1,7 @@
 import os
 import json
 import traceback
+import re
 from groq import Groq
 
 def find_best_matches(user_query: str, found_items: list[dict], api_key: str = None) -> list[dict]:
@@ -38,41 +39,39 @@ def find_best_matches(user_query: str, found_items: list[dict], api_key: str = N
 
     client = Groq(api_key=resolved_key)
 
-    system_prompt = f"""You are an advanced AI Matching Engine for a university Lost and Found system.
+    system_prompt = f"""You are a Lost & Found Matching Engine. OUTPUT ONLY VALID JSON. NO OTHER TEXT ALLOWED.
 
-A student is searching for their lost item. Your job is to compare their description against the list of found items and return the best matches ranked by similarity.
+STUDENT SEARCH QUERY:
+\"{user_query}\"
 
-STUDENT'S SEARCH QUERY:
-"{user_query}"
-
-FOUND ITEMS IN DATABASE:
+FOUND ITEMS:
 {json.dumps(items_for_prompt, indent=2)}
 
-SCORING INSTRUCTIONS:
-1. Core Entity First: Mentally isolate the CORE NOUN the user is looking for (e.g., "earphones", "keys") BEFORE looking at adjectives (e.g., "white", "dark"). If the core entity does not conceptually match the item's `name`, `category`, or `description`, you MUST heavily penalize the score, even if adjectives match perfectly.
-2. Contextual Clues: Use `location` and `event_date` as secondary clues. Match meaning and synonyms, not just exact keywords.
-3. Strict Scoring Buckets: You MUST score items using this scale:
-   - 0.85 to 1.0: Excellent semantic match of the core object.
-   - 0.50 to 0.84: Plausible match (e.g., vague query, or correct category but different brand).
-   - 0.10 to 0.49: Highly unlikely, but shares a location or minor detail.
-   - 0.0 to 0.09: Completely different core object.
-4. Reasoning Accuracy: Your `reason` string MUST logically justify the assigned score based on the strict buckets above.
-5. Scale: Only return objects in the final JSON if their score is >= 0.4.
+MATCHING ALGORITHM:
+1. Extract the CORE NOUN from the query (e.g., \"laptop\", \"keys\", \"bottle\")
+2. Check if the item's name, category, or description contains a semantically similar core object
+3. If core object DOES NOT MATCH: Score = 0.0-0.15 (flat reject, ignore location/date)
+4. If core object MATCHES WELL: Score = 0.85-1.0
+5. If core object PARTIALLY MATCHES (e.g., both electronics, but different type): Score = 0.50-0.84
+6. Use location and date as SECONDARY validation only if core object already matches
 
-OUTPUT REQUIREMENTS:
-- Return ONLY valid JSON — no extra text, no markdown, no explanation.
-- Return a JSON array of objects, sorted highest to lowest score.
-- If no items match, return an empty array: []
+SCORING BUCKETS (STRICT):
+- 0.85-1.0: Core object clearly matches (e.g., \"laptop\" finds \"MacBook\")
+- 0.50-0.84: Core object somewhat matches (e.g., \"phone\" finds \"smartwatch\")
+- 0.15-0.49: Different object but same category (e.g., \"laptop\" finds \"mouse\") 
+- 0.0-0.14: Completely different core object (e.g., \"laptop\" finds \"water bottle\") — ALWAYS REJECT
 
-REQUIRED JSON FORMAT:
+RETURN ONLY THIS JSON ARRAY (nothing else, no comments, no markdown, no explanation):
 [
   {{
-    "item_id": "the item_id string",
-    "name": "the item's name",
-    "score": 0.95,
-    "reason": "Brief explanation justifying the score based on the scoring buckets"
+    \"item_id\": \"id\",
+    \"name\": \"item name\",
+    \"score\": 0.95,
+    \"reason\": \"Core object matches: query seeks X, item is Y.\"
   }}
-]"""
+]
+
+STOP. OUTPUT ONLY JSON. DO NOT ADD ANY OTHER TEXT."""
 
     try:
         chat_completion = client.chat.completions.create(
@@ -81,17 +80,30 @@ REQUIRED JSON FORMAT:
                 {"role": "user", "content": system_prompt}
             ],
             model="llama-3.1-8b-instant",
-            temperature=0.1,
+            temperature=0.0,
             max_tokens=1024,
         )
 
         raw_response = chat_completion.choices[0].message.content.strip()
         print(f"[AI SERVICE] Raw Groq response: {raw_response[:200]}...")
 
-        # Clean up response — sometimes LLMs wrap JSON in ```json ... ```
-        if raw_response.startswith("```"):
-            raw_response = raw_response.split("\n", 1)[1]
-            raw_response = raw_response.rsplit("```", 1)[0]
+        # Aggressive cleanup: remove markdown code blocks and extract JSON
+        # First, try to extract JSON array using regex
+        json_match = re.search(r'\[\s*{.*}\s*\]', raw_response, re.DOTALL)
+        
+        if json_match:
+            raw_response = json_match.group(0)
+            print(f"[AI SERVICE] Extracted JSON using regex.")
+        else:
+            # Fallback: remove markdown wrappers manually
+            if raw_response.startswith("```"):
+                # Remove opening markdown block (```json)
+                raw_response = raw_response.split("\n", 1)[1] if "\n" in raw_response else raw_response[3:]
+            
+            # Remove closing markdown block and anything after it
+            if "```" in raw_response:
+                raw_response = raw_response.split("```")[0]
+            
             raw_response = raw_response.strip()
 
         results = json.loads(raw_response)

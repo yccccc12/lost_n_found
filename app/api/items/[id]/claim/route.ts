@@ -31,7 +31,7 @@ export async function PUT(
     const res = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ claimer_email: sessionEmail }),
+      body: JSON.stringify({ claimer_email: sessionEmail.toLowerCase().trim() }),
       cache: 'no-store',
     })
 
