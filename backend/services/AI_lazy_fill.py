@@ -62,13 +62,12 @@ def _normalize_payload(data: dict[str, Any]) -> dict[str, Any | None]:
         "location": s("location"),
         "event_date": ed,
         "details": s("details"),
-        "email": s("email"),
     }
 
 
 def parse_lazy_report_text(text: str, api_key: str | None = None) -> dict[str, Any | None]:
     """
-    Returns keys: report_type, category, item_name, location, event_date, details, email.
+    Returns keys: report_type, category, item_name, location, event_date, details.
     Omitted or null fields mean "could not infer".
     """
     text = (text or "").strip()
@@ -99,7 +98,6 @@ RULES:
 - location: building or area (string) (e.g. "Library, 3rd floor", "Student Union", "Main Building")
 - event_date: ISO date YYYY-MM-DD if a specific day is implied; otherwise null
 - details: a concise paragraph for the form description, anything that helps identify the item
-- email: only if an email appears in the text
 
 Return ONLY valid JSON (no markdown) with this exact shape:
 {{
@@ -108,8 +106,7 @@ Return ONLY valid JSON (no markdown) with this exact shape:
   "item_name": string | null,
   "location": string | null,
   "event_date": string | null,
-  "details": string | null,
-  "email": string | null
+  "details": string | null
 }}"""
 
     raw_response = ""
