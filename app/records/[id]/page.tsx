@@ -21,13 +21,16 @@ type RecordDoc = {
   category?: string | null
   event_date?: string | null
   created_at?: string
-  status?: string
-  owner_email?: string | null
+  initial_event?: 'lost' | 'found'
+  status?: 'lost' | 'found' | 'claimed'
+  reporter_email?: string | null
+  claimer_email?: string | null
   finder_email?: string | null
   image_urls?: string[] | null
-  tx_hash?: string | null
+  report_tx_hash?: string | null
   claim_tx_hash?: string | null
-  matched_tx_hash?: string | null
+  found_at?: string | null
+  found_tx_hash?: string | null
 }
 
 export default function RecordDetailPage() {
@@ -70,10 +73,6 @@ export default function RecordDetailPage() {
       })
   }, [id])
 
-  useEffect(() => {
-    setShowBlockchainDetails(false)
-  }, [id])
-
   async function handleFoundThisItem() {
     if (!record?._id) return
     if (!sessionEmail?.trim()) {
@@ -105,18 +104,12 @@ export default function RecordDetailPage() {
       }).then((r) => r.json())
       if (refreshed && !refreshed.error && refreshed._id) {
         setRecord(refreshed as RecordDoc)
-      } else {
-        setRecord({
-          ...record,
-          status: 'found',
-          matched_tx_hash: typeof data.tx_hash === 'string' ? data.tx_hash : record.matched_tx_hash,
-        })
       }
       toast({
         className: toastBrutalist,
         title: 'Match recorded',
         description:
-          'A blockchain record was created and this listing is now marked as found.',
+          'A blockchain record was created linking these items together.',
         duration: 6000,
       })
     } catch {
@@ -174,7 +167,7 @@ export default function RecordDetailPage() {
   }
 
   const backHref =
-    record?.status === 'found' || record?.status === 'claimed'
+    record?.initial_event === 'found'
       ? '/browse?type=found'
       : '/browse?type=lost'
 
@@ -206,33 +199,60 @@ export default function RecordDetailPage() {
     )
   }
 
-  const ownerEmailRaw = record.owner_email?.trim()
-  const finderEmailRaw = record.finder_email?.trim()
-  const isOwner = Boolean(
-    sessionEmail && ownerEmailRaw && sessionEmail.trim().toLowerCase() === ownerEmailRaw.toLowerCase(),
+  const reporterEmailRaw = record?.reporter_email?.trim()
+  const claimerEmailRaw = record?.claimer_email?.trim()
+  const finderEmailRaw = record?.finder_email?.trim()
+  
+  const isReporter = Boolean(
+    sessionEmail && reporterEmailRaw && sessionEmail.trim().toLowerCase() === reporterEmailRaw.toLowerCase(),
+  )
+  const isClaimer = Boolean(
+    sessionEmail && claimerEmailRaw && sessionEmail.trim().toLowerCase() === claimerEmailRaw.toLowerCase(),
   )
   const isFinder = Boolean(
     sessionEmail && finderEmailRaw && sessionEmail.trim().toLowerCase() === finderEmailRaw.toLowerCase(),
   )
-  const canClaim = isOwner && record.status === 'found'
-  const isLost = record.status === 'lost'
+  
+  // Claim logic:
+  // - If initial_event="lost": Anyone EXCPET the finder can claim
+  // - If initial_event="found": Anyone EXCEPT the reporter can claim (founder cannot claim their own found item)
+  const canClaim = Boolean(
+    sessionEmail && 
+    record?.status === 'found' && 
+    (
+      (record?.initial_event === 'lost' && !isFinder) ||  // Lost items: NOT the finder
+      (record?.initial_event === 'found' && !isReporter)  // Found items: NOT the founder
+    )
+  )
+  const isLost = record?.initial_event === 'lost'
+  
+  // Display based on how the item was reported
+  const eventLabel = record?.initial_event === 'found' ? 'Found date (approx.)' : 'Lost date (approx.)'
 
-  const eventLabel = record.status === 'found' || record.status === 'claimed' ? 'Found date (approx.)' : 'Lost date (approx.)'
+  const title = record?.name?.trim() || 'Untitled item'
 
-  const title = record.name?.trim() || 'Untitled item'
-
-  let ownerDisplay: string | null = null
-  if (ownerEmailRaw) {
+  let reporterDisplay: string | null = null
+  if (reporterEmailRaw) {
     const session = sessionEmail?.trim()
-    if (session && session.toLowerCase() === ownerEmailRaw.toLowerCase()) {
-      ownerDisplay = 'you'
+    if (session && session.toLowerCase() === reporterEmailRaw.toLowerCase()) {
+      reporterDisplay = 'you'
     } else {
-      ownerDisplay = ownerEmailRaw
+      reporterDisplay = reporterEmailRaw
+    }
+  }
+
+  let claimerDisplay: string | null = null
+  if (claimerEmailRaw && record.status === 'claimed') {
+    const session = sessionEmail?.trim()
+    if (session && session.toLowerCase() === claimerEmailRaw.toLowerCase()) {
+      claimerDisplay = 'you'
+    } else {
+      claimerDisplay = claimerEmailRaw
     }
   }
 
   let finderDisplay: string | null = null
-  if (finderEmailRaw && (record.status === 'found' || record.status === 'claimed')) {
+  if (finderEmailRaw) {
     const session = sessionEmail?.trim()
     if (session && session.toLowerCase() === finderEmailRaw.toLowerCase()) {
       finderDisplay = 'you'
@@ -251,7 +271,7 @@ export default function RecordDetailPage() {
         <div className="rounded-2xl border-4 border-black bg-gradient-to-br from-orange-50/50 via-white/95 to-sky-50/40 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:p-5">
           <p className="mb-4 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Actions</p>
           <div className="flex flex-wrap items-center justify-start gap-3">
-            {isLost && !isOwner ? (
+            {isLost && !isReporter && record.status === 'lost' ? (
               <Button
                 type="button"
                 onClick={handleFoundThisItem}
@@ -297,23 +317,37 @@ export default function RecordDetailPage() {
               </Button>
             ) : null}
           </div>
+
+          {canClaim && record?.initial_event === 'lost' && !isReporter ? (
+            <div className="mt-5 rounded-xl border-2 border-rose-800 bg-rose-50 px-4 py-3 text-sm font-semibold leading-relaxed text-rose-950 shadow-[3px_3px_0px_0px_rgba(159,18,57,0.3)]">
+              <span className="font-black text-rose-800 uppercase tracking-widest mr-1.5">Warning:</span> 
+              This item is not yours. Claiming it may result in a stealing record that is immutable and permanent on the blockchain, and authorities may track your identity.
+            </div>
+          ) : null}
+
+          {canClaim && record?.initial_event === 'found' ? (
+            <div className="mt-5 rounded-xl border-2 border-amber-800 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-950 shadow-[3px_3px_0px_0px_rgba(146,64,14,0.3)]">
+              <span className="font-black text-amber-800 uppercase tracking-widest mr-1.5">Disclaimer:</span> 
+              Please ensure you are the true owner. Falsely claiming this item will result in a permanent and immutable claiming record on the blockchain that authorities may track.
+            </div>
+          ) : null}
         </div>
 
         {showBlockchainDetails ? (
           <section aria-label="Blockchain verification" className="scroll-mt-24">
             <BlockchainReceipt
-              txHash={record.tx_hash || null}
-              matchTxHash={record.matched_tx_hash || null}
-              itemId={record._id}
-              itemName={record.name}
-              reportType={(record.status as 'lost' | 'found' | 'claimed') || null}
-              eventDate={record.event_date || null}
-              reportedAt={record.created_at || null}
-              category={record.category || null}
-              description={record.description || null}
-              location={record.location || null}
-              imageUrls={record.image_urls?.length ? record.image_urls : null}
-              closingTxHash={record.claim_tx_hash || null}
+              txHash={record?.report_tx_hash || null}
+              matchTxHash={record?.found_tx_hash || null}
+              itemId={record?._id}
+              itemName={record?.name}
+              reportType={(record?.status as 'lost' | 'found' | 'claimed') || null}
+              eventDate={record?.event_date || null}
+              reportedAt={record?.created_at || null}
+              category={record?.category || null}
+              description={record?.description || null}
+              location={record?.location || null}
+              imageUrls={record?.image_urls?.length ? record.image_urls : null}
+              closingTxHash={record?.claim_tx_hash || null}
             />
           </section>
         ) : (
@@ -337,18 +371,21 @@ export default function RecordDetailPage() {
 
             <ItemDetailHero
               name={title}
-              description={record.description ?? null}
-              location={record.location ?? null}
-              category={record.category ?? null}
-              eventDate={record.event_date ?? null}
-              reportedAt={record.created_at ?? null}
-              status={record.status ?? '—'}
-              imageUrls={record.image_urls ?? null}
+              description={record?.description ?? null}
+              location={record?.location ?? null}
+              category={record?.category ?? null}
+              eventDate={record?.event_date ?? null}
+              reportedAt={record?.created_at ?? null}
+              status={record?.status ?? '—'}
+              imageUrls={record?.image_urls ?? null}
               eventLabel={eventLabel}
-              ownerDisplay={ownerDisplay}
-              ownerEmailRaw={ownerEmailRaw}
+              reporterRole={record?.initial_event === 'lost' ? 'owner' : 'finder'}
+              reporterDisplay={reporterDisplay}
+              reporterEmailRaw={reporterEmailRaw}
               finderDisplay={finderDisplay}
               finderEmailRaw={finderEmailRaw}
+              claimerDisplay={claimerDisplay}
+              claimerEmailRaw={claimerEmailRaw}
             />
           </>
         )}

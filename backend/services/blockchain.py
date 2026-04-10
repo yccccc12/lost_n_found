@@ -19,10 +19,11 @@ ADDRESS = settings.WALLET_ADDRESS
 # -----------------------------
 def normalize(data: dict) -> dict:
     """
-    Ensure consistent structure for hashing
+    Ensure consistent structure for hashing.
     - Remove None / empty values
     - Keep only relevant fields
-    - Include "owner_email" only when non-empty so legacy items (no owner_email) still verify.
+    - Include initial_event and status
+    - Include emails and action when present
     """
     out = {
         "name": (data.get("name") or "").strip(),
@@ -31,9 +32,37 @@ def normalize(data: dict) -> dict:
         "location": (data.get("location") or "").strip(),
         "event_date": (data.get("event_date") or "").strip(),
     }
-    owner_email = (data.get("owner_email") or "").strip()
-    if owner_email:
-        out["owner_email"] = owner_email
+    
+    # Include initial_event (how the item was reported: lost or found)
+    initial_event = (data.get("initial_event") or "").strip()
+    if initial_event:
+        out["initial_event"] = initial_event
+    
+    # Include status (lost, found, or claimed)
+    status = (data.get("status") or "").strip()
+    if status:
+        out["status"] = status
+    
+    # Include action if present (item_posted, item_claimed, etc.)
+    action = (data.get("action") or "").strip()
+    if action:
+        out["action"] = action
+    
+    # Include reporter_email if present
+    reporter_email = (data.get("reporter_email") or "").strip()
+    if reporter_email:
+        out["reporter_email"] = reporter_email
+    
+    # Include claimer_email if present
+    claimer_email = (data.get("claimer_email") or "").strip()
+    if claimer_email:
+        out["claimer_email"] = claimer_email
+    
+    # Include report_tx_hash for claim transactions (forensic trail to original report)
+    report_tx_hash = (data.get("report_tx_hash") or "").strip()
+    if report_tx_hash:
+        out["report_tx_hash"] = report_tx_hash
+    
     return out
 
 

@@ -115,17 +115,20 @@ export function LandingPage() {
     fetchRecords()
   }, [])
 
-  const getStatusBadge = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'claimed':
-        return { bg: 'bg-emerald-200', text: 'text-emerald-800', label: 'Returned' }
-      case 'found':
-        return { bg: 'bg-amber-200', text: 'text-amber-800', label: 'Found' }
-      case 'lost':
-        return { bg: 'bg-rose-200', text: 'text-rose-800', label: 'Lost' }
-      default:
-        return { bg: 'bg-gray-200', text: 'text-gray-800', label: status }
+  const getStatusBadge = (initialEvent: string, status: string) => {
+    const event = initialEvent?.toLowerCase()
+    const st = status?.toLowerCase()
+    
+    if (st === 'lost') {
+      return { border: 'border-rose-700/30', bg: 'bg-rose-100', text: 'text-rose-800', label: 'Lost - In search' }
     }
+    if (st === 'found') {
+      return { border: 'border-amber-700/30', bg: 'bg-amber-100', text: 'text-amber-800', label: 'Found - Ready for claim' }
+    }
+    if (st === 'claimed') {
+      return { border: 'border-green-700/30', bg: 'bg-green-100', text: 'text-green-800', label: 'Found - Claimed' }
+    }
+    return { border: 'border-gray-300', bg: 'bg-gray-100', text: 'text-gray-600', label: st || 'Unknown' }
   }
 
   return (
@@ -246,7 +249,7 @@ export function LandingPage() {
                   <p className="text-center text-sm text-gray-500 py-4">Loading records...</p>
                 ) : records.length > 0 ? (
                   records.map((record, idx) => {
-                    const badge = getStatusBadge(record.status)
+                    const badge = getStatusBadge(record.initial_event, record.status)
                     const recordId = record._id || '—'
                     return (
                       <Link
@@ -259,7 +262,7 @@ export function LandingPage() {
                           <p className="text-base font-semibold text-foreground">{record.name || 'Unnamed item'}</p>
                         </div>
 
-                        <span className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded text-sm font-semibold whitespace-nowrap shrink-0`}>
+                        <span className={`border-2 ${badge.border} ${badge.bg} ${badge.text} px-3 py-1 text-xs font-black rounded-lg whitespace-nowrap shrink-0 inline-flex items-center gap-1.5`}>
                           {badge.label}
                         </span>
                       </Link>

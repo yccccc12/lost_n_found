@@ -146,7 +146,7 @@ export function ReportItemForm({
 
       setCreatedItemId(typeof data?.item_id === 'string' ? data.item_id : null)
       setBlockchainHash(typeof data?.blockchain_hash === 'string' ? data.blockchain_hash : null)
-      setTxHash(typeof data?.tx_hash === 'string' ? data.tx_hash : null)
+      setTxHash(typeof (data?.report_tx_hash || data?.tx_hash) === 'string' ? (data.report_tx_hash || data.tx_hash) : null)
       setReportedAt(typeof data?.created_at === 'string' ? data.created_at : null)
       setSubmitted(true)
     } catch {

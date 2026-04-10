@@ -7,41 +7,35 @@ import { CampusShell } from "@/components/campus-shell";
 // ─────────────────────────────────────────────
 // StatusBadge — maps raw DB status → styled tag
 // ─────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
-    const s = status?.toLowerCase();
+function StatusBadge({ initialEvent, status }: { initialEvent: string; status: string }) {
+    const event = initialEvent?.toLowerCase();
+    const st = status?.toLowerCase();
 
-    if (s === "lost") {
+    if (st === "lost") {
         return (
-            <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-sm font-medium text-rose-700 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border-2 border-rose-700/30 bg-rose-100 px-3 py-1 text-xs font-black text-rose-800 whitespace-nowrap">
                 Lost - In search
             </span>
         );
     }
-    if (s === "found") {
+    if (st === "found") {
         return (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border-2 border-amber-700/30 bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 whitespace-nowrap">
                 Found - Ready for claim
             </span>
         );
     }
-    if (s === "claimed") {
+    if (st === "claimed") {
         return (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border-2 border-green-700/30 bg-green-100 px-3 py-1 text-xs font-black text-green-800 whitespace-nowrap">
                 Found - Claimed
-            </span>
-        );
-    }
-    if (s === "returned" || s === "claimed") {
-        return (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700 whitespace-nowrap border border-green-300">
-                ✅ Returned
             </span>
         );
     }
     // Fallback
     return (
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600 whitespace-nowrap border border-gray-300">
-            {status}
+        <span className="inline-flex items-center rounded-lg border-2 border-gray-300 bg-gray-100 px-3 py-1 text-xs font-black text-gray-600 whitespace-nowrap">
+            {st || 'Unknown'}
         </span>
     );
 }
@@ -84,7 +78,8 @@ export default function RecordsPage() {
                     id: item._id,
                     name: item.name || "—",
                     timestamp: formatMYT(item.created_at),
-                    rawStatus: item.status, // "lost" | "found" | "claimed"
+                    initialEvent: item.initial_event,
+                    status: item.status,
                 })).reverse();
 
                 setRecords(formatted);
@@ -102,11 +97,13 @@ export default function RecordsPage() {
         const filtered = records.filter((item) => {
             const matchesSearch =
                 item.id.toLowerCase().includes(q) ||
-                item.name.toLowerCase().includes(q) ||
-                item.rawStatus.toLowerCase().includes(q);
+                item.name.toLowerCase().includes(q);
 
             const matchesStatus =
-                statusFilter === "all" || item.rawStatus === statusFilter;
+                statusFilter === "all" ||
+                statusFilter === "lost" && item.initialEvent === "lost" && item.status === "lost" ||
+                statusFilter === "found" && item.initialEvent === "found" && item.status === "found" ||
+                statusFilter === "claimed" && item.status === "claimed";
 
             return matchesSearch && matchesStatus;
         });
@@ -144,9 +141,9 @@ export default function RecordsPage() {
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
                         <option value="all">All</option>
-                        <option value="lost">Lost - In search</option>
-                        <option value="found">Found - Ready for claim</option>
-                        <option value="claimed">Found - Claimed</option>
+                        <option value="lost">Lost</option>
+                        <option value="found">Found</option>
+                        <option value="claimed">Claimed</option>
                     </select>
                 </div>
 
@@ -177,7 +174,7 @@ export default function RecordsPage() {
                                 {/* Status badge + View — justify-between aligns buttons in one column */}
                                 <div className="p-4 flex items-center justify-between gap-3 min-w-0">
                                     <div className="min-w-0">
-                                        <StatusBadge status={record.rawStatus} />
+                                        <StatusBadge initialEvent={record.initialEvent} status={record.status} />
                                     </div>
                                     <button
                                         type="button"

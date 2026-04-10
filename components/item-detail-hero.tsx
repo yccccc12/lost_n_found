@@ -78,14 +78,19 @@ export type ItemDetailHeroProps = {
   status: string
   imageUrls: string[] | null | undefined
   eventLabel: string
-  /** When set, shown under Owner — pass `"you"` when the viewer is the owner (renders as a full sentence). */
-  ownerDisplay?: string | null
-  /** Owner's raw email (used for display when ownerDisplay is 'you') */
-  ownerEmailRaw?: string | null
-  /** When set, shown under Finder — pass `"you"` when the viewer is the finder (renders as a full sentence). */
+  reporterRole?: 'owner' | 'finder'
+  /** When set, shown under Reporter — pass `"you"` when the viewer is the reporter (renders as a full sentence). */
+  reporterDisplay?: string | null
+  /** Reporter's raw email (used for display when reporterDisplay is 'you') */
+  reporterEmailRaw?: string | null
+  /** When set, shown under Finder */
   finderDisplay?: string | null
-  /** Finder's raw email (used for display when finderDisplay is 'you') */
+  /** Finder's raw email */
   finderEmailRaw?: string | null
+  /** When set, shown under Claimer — pass `"you"` when the viewer is the claimer (renders as a full sentence). */
+  claimerDisplay?: string | null
+  /** Claimer's raw email (used for display when claimerDisplay is 'you') */
+  claimerEmailRaw?: string | null
 }
 
 export function ItemDetailHero({
@@ -98,10 +103,13 @@ export function ItemDetailHero({
   status,
   imageUrls,
   eventLabel,
-  ownerDisplay = null,
-  ownerEmailRaw = null,
+  reporterRole = 'owner',
+  reporterDisplay = null,
+  reporterEmailRaw = null,
   finderDisplay = null,
   finderEmailRaw = null,
+  claimerDisplay = null,
+  claimerEmailRaw = null,
 }: ItemDetailHeroProps) {
   const urls = imageUrls?.filter((u) => typeof u === 'string' && u.trim().length > 0) ?? []
   const hasImage = urls.length > 0
@@ -127,6 +135,8 @@ export function ItemDetailHero({
         timeStyle: 'short',
       }).format(new Date(reportedAt))
     : null
+
+  const statusLabel = status === 'claimed' ? 'Claimed' : 'Active'
 
   const hasMetaPanel = Boolean(
     category ||
@@ -208,17 +218,19 @@ export function ItemDetailHero({
                   value={formattedReported}
                 />
               ) : null}
-              {ownerDisplay ? (
+              {reporterDisplay ? (
                 <DetailRow
                   icon={<User strokeWidth={2} />}
-                  label="Owner"
+                  label={reporterRole === 'owner' ? 'Owner' : 'Finder'}
                   value={
-                    ownerDisplay === 'you' 
-                      ? `You are the owner (${ownerEmailRaw})` 
-                      : ownerDisplay
+                    reporterDisplay === 'you' 
+                      ? reporterRole === 'owner' 
+                        ? `You lost this item (${reporterEmailRaw})`
+                        : `You found this item (${reporterEmailRaw})`
+                      : reporterDisplay
                   }
                   valueClassName={
-                    ownerDisplay === 'you'
+                    reporterDisplay === 'you'
                       ? '!text-[15px] font-semibold normal-case leading-snug text-foreground sm:!text-base'
                       : 'break-all font-medium'
                   }
@@ -227,14 +239,30 @@ export function ItemDetailHero({
               {finderDisplay ? (
                 <DetailRow
                   icon={<User strokeWidth={2} />}
-                  label="Finder"
+                  label="Found by"
                   value={
-                    finderDisplay === 'you' 
-                      ? `You are the finder (${finderEmailRaw})` 
+                    finderDisplay === 'you'
+                      ? `You found this item (${finderEmailRaw})`
                       : finderDisplay
                   }
                   valueClassName={
                     finderDisplay === 'you'
+                      ? '!text-[15px] font-semibold normal-case leading-snug text-foreground sm:!text-base'
+                      : 'break-all font-medium'
+                  }
+                />
+              ) : null}
+              {claimerDisplay ? (
+                <DetailRow
+                  icon={<User strokeWidth={2} />}
+                  label="Claimer"
+                  value={
+                    claimerDisplay === 'you' 
+                      ? `You claimed this item (${claimerEmailRaw})` 
+                      : claimerDisplay
+                  }
+                  valueClassName={
+                    claimerDisplay === 'you'
                       ? '!text-[15px] font-semibold normal-case leading-snug text-foreground sm:!text-base'
                       : 'break-all font-medium'
                   }
