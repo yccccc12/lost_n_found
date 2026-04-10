@@ -327,14 +327,14 @@ def claim_item(item_id: str, body: ClaimRequest):
     initial_event = item.get("initial_event")
     
     # Authorization logic:
-    # - If initial_event="found": Founder (reporter) CANNOT claim their own found item
-    # - If initial_event="lost": Finder CANNOT claim the item they found
-    if initial_event == "found" and reporter_email:
+    # - If initial_event="lost": ONLY the owner (reporter) can claim their own lost item
+    # - If initial_event="found": Anyone EXCEPT the founder (reporter) can claim
+    if initial_event == "lost" and reporter_email:
+        if claimer_email != reporter_email.lower().strip():
+            raise HTTPException(status_code=403, detail="Only the original owner can claim this item.")
+    elif initial_event == "found" and reporter_email:
         if claimer_email == reporter_email.lower().strip():
             raise HTTPException(status_code=400, detail="You cannot claim an item you reported as found.")
-    elif initial_event == "lost" and finder_email:
-        if claimer_email == finder_email.lower().strip():
-            raise HTTPException(status_code=400, detail="You cannot claim an item you found.")
 
     report_tx_hash = item.get("report_tx_hash")
 

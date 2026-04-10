@@ -214,13 +214,13 @@ export default function RecordDetailPage() {
   )
   
   // Claim logic:
-  // - If initial_event="lost": Anyone EXCPET the finder can claim
+  // - If initial_event="lost": ONLY the owner (reporter) can claim
   // - If initial_event="found": Anyone EXCEPT the reporter can claim (founder cannot claim their own found item)
   const canClaim = Boolean(
     sessionEmail && 
     record?.status === 'found' && 
     (
-      (record?.initial_event === 'lost' && !isFinder) ||  // Lost items: NOT the finder
+      (record?.initial_event === 'lost' && isReporter) ||  // Lost items: ONLY the owner
       (record?.initial_event === 'found' && !isReporter)  // Found items: NOT the founder
     )
   )
@@ -317,13 +317,6 @@ export default function RecordDetailPage() {
               </Button>
             ) : null}
           </div>
-
-          {canClaim && record?.initial_event === 'lost' && !isReporter ? (
-            <div className="mt-5 rounded-xl border-2 border-rose-800 bg-rose-50 px-4 py-3 text-sm font-semibold leading-relaxed text-rose-950 shadow-[3px_3px_0px_0px_rgba(159,18,57,0.3)]">
-              <span className="font-black text-rose-800 uppercase tracking-widest mr-1.5">Warning:</span> 
-              This item is not yours. Claiming it may result in a stealing record that is immutable and permanent on the blockchain, and authorities may track your identity.
-            </div>
-          ) : null}
 
           {canClaim && record?.initial_event === 'found' ? (
             <div className="mt-5 rounded-xl border-2 border-amber-800 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-950 shadow-[3px_3px_0px_0px_rgba(146,64,14,0.3)]">
