@@ -71,9 +71,15 @@ export default function RecordsPage() {
     const router = useRouter();
 
     useEffect(() => {
-        fetch("http://localhost:8000/items/")
-            .then((res) => res.json())
-            .then((data) => {
+        fetch("/api/items/all")
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok || !Array.isArray(data)) {
+                    console.error("Error fetching records:", data?.error ?? res.statusText);
+                    setRecords([]);
+                    setFilteredRecords([]);
+                    return;
+                }
                 const formatted = data.map((item: any) => ({
                     id: item._id,
                     name: item.name || "—",
@@ -83,12 +89,11 @@ export default function RecordsPage() {
 
                 setRecords(formatted);
                 setFilteredRecords(formatted);
-                setLoading(false);
             })
             .catch((err) => {
                 console.error("Error fetching records:", err);
-                setLoading(false);
-            });
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     // Filter logic
