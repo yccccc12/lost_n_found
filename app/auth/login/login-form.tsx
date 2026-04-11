@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { AlertCircleIcon, CheckCircle2Icon } from 'lucide-react'
+import { AlertCircleIcon, CheckCircle2Icon, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -61,6 +61,9 @@ export function LoginForm() {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')
   const [authError, setAuthError] = useState('')
   const [authSuccess, setAuthSuccess] = useState('')
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+  const [showSignupPassword, setShowSignupPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -198,13 +201,26 @@ export function LoginForm() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input
-                            type="password"
-                            autoComplete="current-password"
-                            placeholder="••••••••"
-                            className="rounded-xl border-2 border-black"
-                            {...field}
-                          />
+                          <div className="relative flex items-center">
+                            <Input
+                              type={showLoginPassword ? 'text' : 'password'}
+                              autoComplete="current-password"
+                              placeholder="••••••••"
+                              className="rounded-xl border-2 border-black pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowLoginPassword(!showLoginPassword)}
+                              className="absolute right-3 text-gray-500 hover:text-black"
+                            >
+                              {showLoginPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -256,13 +272,26 @@ export function LoginForm() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input
-                            type="password"
-                            autoComplete="new-password"
-                            placeholder="At least 6 characters"
-                            className="rounded-xl border-2 border-black"
-                            {...field}
-                          />
+                          <div className="relative flex items-center">
+                            <Input
+                              type={showSignupPassword ? 'text' : 'password'}
+                              autoComplete="new-password"
+                              placeholder="At least 6 characters"
+                              className="rounded-xl border-2 border-black pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSignupPassword(!showSignupPassword)}
+                              className="absolute right-3 text-gray-500 hover:text-black"
+                            >
+                              {showSignupPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -275,13 +304,26 @@ export function LoginForm() {
                       <FormItem>
                         <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
-                          <Input
-                            type="password"
-                            autoComplete="new-password"
-                            placeholder="Repeat your password"
-                            className="rounded-xl border-2 border-black"
-                            {...field}
-                          />
+                          <div className="relative flex items-center">
+                            <Input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              autoComplete="new-password"
+                              placeholder="Repeat your password"
+                              className="rounded-xl border-2 border-black pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 text-gray-500 hover:text-black"
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -305,15 +347,6 @@ export function LoginForm() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2 border-t-4 border-black/10 pt-6">
-          <Button
-            variant="outline"
-            asChild
-            className="w-full rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-          >
-            <Link href="/">Back to home</Link>
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   )
