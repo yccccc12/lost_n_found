@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { Search, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
@@ -13,6 +13,12 @@ import {
 } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 const btnOutline =
@@ -140,7 +146,7 @@ export function LandingPage() {
           {/* Hero */}
           <section className="max-w-2xl space-y-5 text-left">
             <Badge className="rounded-full border-2 border-black bg-orange-200 px-3 py-1 font-black uppercase tracking-wide text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              Campus pulse live
+              Live campus network
             </Badge>
             <h1 className="text-balance text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl">
               <span className="text-slate-900">Recover your lost items,</span>{' '}
@@ -154,28 +160,58 @@ export function LandingPage() {
               You are signed in — browse listings, file a report, or explore blockchain records from the header
               anytime.
             </p>
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Button
-                asChild
-                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border-2 border-black bg-slate-900 px-4 text-sm font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-900"
-              >
-                <Link href="/report?type=lost" className="inline-flex items-center gap-2">
-                  <span className="text-base leading-none" aria-hidden>
-                    ❔
-                  </span>
-                  Lost something
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className={cn(btnOutline, "bg-white text-black hover:bg-slate-100")}
-              >
-                <Link href="/report?type=found">
-                  <Search className="h-4 w-4 shrink-0" aria-hidden />
-                  Found something
-                </Link>
-              </Button>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              {/* Search for Items Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-black bg-slate-900 px-5 text-xs font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-800 transition-colors">
+                    <Search className="h-3.5 w-3.5" aria-hidden />
+                    <span>Search for Items</span>
+                    <ChevronDown className="h-3.5 w-3.5 ml-1 transition-transform group-data-[state=open]:rotate-180" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
+                  <DropdownMenuItem asChild>
+                    <Link href="/browse?type=lost" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-red-50 flex gap-2">
+                      <span className="text-red-600">❌</span>
+                      <span className="text-red-700">Recent Lost Item</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/browse?type=found" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-emerald-50 flex gap-2">
+                      <span className="text-emerald-600">✅</span>
+                      <span className="text-emerald-700">Recent Found Item</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Report Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-black bg-white px-5 text-xs font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-50 transition-colors">
+                    <span className="text-base leading-none" aria-hidden>
+                      📝
+                    </span>
+                    <span>Report Lost/Found</span>
+                    <ChevronDown className="h-3.5 w-3.5 ml-1 transition-transform group-data-[state=open]:rotate-180" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
+                  <DropdownMenuItem asChild>
+                    <Link href="/report?type=lost" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-slate-100 flex gap-2">
+                      <span>❔</span>
+                      I lost something
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/report?type=found" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-slate-100 flex gap-2">
+                      <span>🔍</span>
+                      I found something
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </section>
 
