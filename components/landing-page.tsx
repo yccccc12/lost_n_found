@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Search, ChevronDown } from 'lucide-react'
+import { Search, Package, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
@@ -12,7 +12,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,8 +20,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
-const btnOutline =
-  'rounded-xl border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
 const cardSurface =
   'border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white overflow-hidden'
 
@@ -161,53 +158,71 @@ export function LandingPage() {
               anytime.
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              {/* Search for Items Dropdown */}
+              {/* Left: reported lost (dark) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-black bg-slate-900 px-5 text-xs font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-800 transition-colors">
-                    <Search className="h-3.5 w-3.5" aria-hidden />
-                    <span>Search for Items</span>
-                    <ChevronDown className="h-3.5 w-3.5 ml-1 transition-transform group-data-[state=open]:rotate-180" />
+                  <button
+                    type="button"
+                    className="group inline-flex h-10 items-center gap-2 rounded-xl border-2 border-black bg-slate-900 px-5 text-xs font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 ease-out hover:translate-x-[3px] hover:translate-y-[3px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  >
+                    <Search className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
+                    <span>I Lost Something</span>
+                    <ChevronDown className="h-3.5 w-3.5 ml-1 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
+                <DropdownMenuContent
+                  align="start"
+                  className="min-w-[13rem] border-2 border-black rounded-xl p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white"
+                >
                   <DropdownMenuItem asChild>
-                    <Link href="/browse?type=lost" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-red-50 flex gap-2">
-                      <span className="text-red-600">❌</span>
-                      <span className="text-red-700">Recent Lost Item</span>
+                    <Link
+                      href="/browse?type=found"
+                      className="cursor-pointer rounded-lg px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-100 focus:bg-slate-100"
+                    >
+                      View Reported Found Item
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/browse?type=found" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-emerald-50 flex gap-2">
-                      <span className="text-emerald-600">✅</span>
-                      <span className="text-emerald-700">Recent Found Item</span>
+                    <Link
+                      href="/report?type=lost"
+                      className="cursor-pointer rounded-lg px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-100 focus:bg-slate-100"
+                    >
+                      Report a Lost Item
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Report Dropdown */}
+              {/* Right: found — white surface + neutral menu hovers */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-black bg-white px-5 text-xs font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-50 transition-colors">
-                    <span className="text-base leading-none" aria-hidden>
-                      📝
-                    </span>
-                    <span>Report Lost/Found</span>
-                    <ChevronDown className="h-3.5 w-3.5 ml-1 transition-transform group-data-[state=open]:rotate-180" />
+                  <button
+                    type="button"
+                    className="group inline-flex h-10 items-center gap-2 rounded-xl border-2 border-black bg-white px-5 text-xs font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 ease-out hover:translate-x-[3px] hover:translate-y-[3px] hover:bg-slate-50 hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  >
+                    <Package className="h-3.5 w-3.5 shrink-0 text-emerald-800" aria-hidden />
+                    <span>I Found Something</span>
+                    <ChevronDown className="h-3.5 w-3.5 ml-1 shrink-0 text-black transition-transform group-data-[state=open]:rotate-180" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
+                <DropdownMenuContent
+                  align="start"
+                  className="min-w-[13rem] border-2 border-black rounded-xl p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white"
+                >
                   <DropdownMenuItem asChild>
-                    <Link href="/report?type=lost" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-slate-100 flex gap-2">
-                      <span>❔</span>
-                      I lost something
+                    <Link
+                      href="/browse?type=lost"
+                      className="cursor-pointer rounded-lg px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-100 focus:bg-slate-100"
+                    >
+                      View Reported Lost item
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/report?type=found" className="px-4 py-2 text-xs font-bold cursor-pointer hover:bg-slate-100 flex gap-2">
-                      <span>🔍</span>
-                      I found something
+                    <Link
+                      href="/report?type=found"
+                      className="cursor-pointer rounded-lg px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-100 focus:bg-slate-100"
+                    >
+                      Report a Found Item
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -311,33 +326,6 @@ export function LandingPage() {
             </div>
           </section>
           {/*  Blockchain Section END */}
-
-          {/* Orange CTA */}
-          <section className="rounded-2xl border-4 border-black bg-orange-500 p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:p-10">
-            <div className="mx-auto max-w-2xl space-y-4">
-              <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                Can&apos;t find your item?
-              </h2>
-              <p className="font-medium leading-relaxed text-slate-900/90">
-                Submit a lost item report and we&apos;ll notify you the moment a matching item is turned in
-                to any campus security post.
-              </p>
-              <div className="flex flex-col justify-center gap-3 pt-2 sm:flex-row sm:flex-wrap">
-                <Button
-                  asChild
-                  className={`${btnOutline} bg-slate-900 text-white hover:bg-slate-900`}
-                >
-                  <Link href="/report?type=lost">Report Lost - I lost something</Link>
-                </Button>
-                <Button
-                  asChild
-                  className={`${btnOutline} bg-white text-slate-900 hover:bg-white`}
-                >
-                  <Link href="/report?type=found">Report Found - I found something</Link>
-                </Button>
-              </div>
-            </div>
-          </section>
         </div>
 
         <SiteFooter className="mt-0" />
