@@ -3,7 +3,7 @@
 import { CheckCircle2, ExternalLink, Info, MapPin, Package, ShieldCheck, Tag } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-const EXPLORER_TX_BASE = 'http://139.180.140.143/tx'
+const EXPLORER_TX_BASE = 'http://139.180.140.143:3002/tx'
 
 function shortTx(hash: string) {
   return `${hash.slice(0, 10)}…${hash.slice(-8)}`
