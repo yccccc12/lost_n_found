@@ -1,53 +1,44 @@
-# Campus Lost & Found — Backend Setup
+# Campus Lost & Found
 
-## 1) Clone the repository
+## ⚠️ Important: Backend Cold Start (READ THIS)
 
-```bash
-git clone https://github.com/yccccc12/lost_n_found.git
-cd campus-lost-and-found
+The backend is deployed on **Render.com** and may experience a **cold start delay**. This means:
+
+- The backend can take **2-3 minutes** to fully initialize when first accessed
+- The frontend may load before the backend is ready, causing API errors
+- This is normal behavior for free-tier services on Render
+
+### How to Activate the Backend
+
+Before using the application demo, **activate the backend** by visiting:
+
+```
+https://lost-n-found-yynf.onrender.com
 ```
 
-## 2) Install backend dependencies
+**Wait 2-3 minutes** for the page to load completely. Once the backend is active, you can use the full application.
 
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
+### If You See API Errors:
 
-pip install -r requirements.txt
-```
+1. **Check Backend Status**: Visit `https://lost-n-found-yynf.onrender.com` 
+2. **Wait**: If it's loading, wait 2-3 minutes for initialization
+3. **Retry**: Once active, refresh the frontend application
 
-## 3) Run the backend locally
-Make sure you are in the backend directory
-```bash
-python main.py
-```
+---
 
-*Remark*
-- Backend runs locally at `http://localhost:8000` (or the port shown in the terminal).
-- Access `http://localhost:8000/docs` to view the FastAPI Terminal Endpoint
-- Once the code is push to github, it will be deployed using render.
+## Project Tech Stack
 
-## 4) Set up the frontend (Next.js)
+- **Frontend**: Next.js with React, TypeScript, Tailwind CSS
+- **Backend**: FastAPI (Python)
+- **Database**: MongoDB
+- **Deployment**: Render.com
 
-From the project root directory:
+---
 
-```bash
-npm install
-```
+## Project Structure
 
-### Running the frontend locally
-
-```bash
-npm run dev
-```
-
-- The frontend will run locally at `http://localhost:3000` by default.
-- Make sure your backend (`python main.py`) is running on its default port (`http://localhost:8000`) unless you have set a different value.
-- If you need to customize backend connections, create a `.env` file in the root directory and set `BACKEND_ENDPOINT=http://localhost:8000` (or your backend URL).
-- Both frontend and backend must be running for full app functionality.
-
-## 5) Project Structure
-
-- `backend/` — FastAPI Python backend
-- others - NextJS Frontend
+- `backend/` — FastAPI Python backend with routes for items, auth, AI, and notifications
+- `app/` — Next.js frontend with pages for browsing, reporting, and user records
+- `components/` — React components for UI
+- `lib/` — Utility functions and helpers
+- `public/` — Static assets
