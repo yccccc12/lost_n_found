@@ -69,16 +69,20 @@ def parse_lazy_report_text(text: str, api_key: str | None = None) -> dict[str, A
     """
     Returns keys: report_type, category, item_name, location, event_date, details.
     Omitted or null fields mean "could not infer".
+    Will automatically fall back to GROQ_API_KEY_1 if the primary key is exhausted.
     """
     text = (text or "").strip()
     if not text:
         return {}
 
-    key = api_key or os.environ.get("GROQ_API_KEY")
-    if not key:
+    primary_key = api_key or os.environ.get("GROQ_API_KEY")
+    fallback_key = os.environ.get("GROQ_API_KEY_1")
+    
+    if not primary_key:
         raise ValueError("GROQ_API_KEY is missing.")
-
-    client = Groq(api_key=key)
+    
+    if not fallback_key:
+        print("[AI_LAZY_FILL] WARNING: GROQ_API_KEY_1 is not set. Fallback unavailable.")
 
     current_time_str = get_current_time_in_malaysia()
     
@@ -109,8 +113,9 @@ Return ONLY valid JSON (no markdown) with this exact shape:
   "details": string | null
 }}"""
 
-    raw_response = ""
-    try:
+    def call_groq(key: str) -> str:
+        """Helper function to call Groq API with the given key."""
+        client = Groq(api_key=key)
         chat = client.chat.completions.create(
             messages=[
                 {
@@ -123,7 +128,26 @@ Return ONLY valid JSON (no markdown) with this exact shape:
             temperature=0.2,
             max_tokens=1024,
         )
-        raw_response = chat.choices[0].message.content.strip()
+        return chat.choices[0].message.content.strip()
+    
+    raw_response = ""
+    try:
+        try:
+            raw_response = call_groq(primary_key)
+        except Exception as e:
+            error_message = str(e).lower()
+            # Check if error indicates key exhaustion
+            if any(keyword in error_message for keyword in ["exhausted", "rate limit", "quota", "exceeded", "invalid api key"]):
+                print(f"[AI_LAZY_FILL] Primary key exhausted or rate limited, attempting fallback key...")
+                if fallback_key:
+                    print(f"[AI_LAZY_FILL] Retrying with GROQ_API_KEY_1")
+                    raw_response = call_groq(fallback_key)
+                    print(f"[AI_LAZY_FILL] Successfully used fallback key")
+                else:
+                    print(f"[AI_LAZY_FILL] ERROR: Primary key failed and no fallback key available")
+                    raise
+            else:
+                raise
         raw_response = _strip_code_fence(raw_response)
         data = json.loads(raw_response)
         if not isinstance(data, dict):

@@ -10,6 +10,7 @@ def find_best_matches(user_query: str, found_items: list[dict], api_key: str = N
     Uses Groq (LLaMA 3) to rank items by relevance and return structured results.
     
     api_key: Pass the Groq API key directly (from main.py where dotenv is loaded).
+    Will automatically fall back to GROQ_API_KEY_1 if the primary key is exhausted.
     """
 
     # If no items to match against, return empty
@@ -17,11 +18,18 @@ def find_best_matches(user_query: str, found_items: list[dict], api_key: str = N
         print("[AI SERVICE] No found items to match against — returning empty.")
         return []
 
-    # Resolve API key
-    resolved_key = api_key or os.environ.get("GROQ_API_KEY")
-    if not resolved_key:
+    # Resolve API keys
+    primary_key = api_key or os.environ.get("GROQ_API_KEY")
+    fallback_key = os.environ.get("GROQ_API_KEY_1")
+    
+    if not primary_key:
         print("[AI SERVICE] ERROR: GROQ_API_KEY is not set!")
         raise ValueError("GROQ_API_KEY is missing. Add it to your .env file.")
+    
+    if not fallback_key:
+        print("[AI SERVICE] WARNING: GROQ_API_KEY_1 is not set. Fallback unavailable.")
+    
+    resolved_key = primary_key
 
     # Build a clean list of items for the prompt (only relevant fields)
     items_for_prompt = []
@@ -73,7 +81,9 @@ RETURN ONLY THIS JSON ARRAY (nothing else, no comments, no markdown, no explanat
 
 STOP. OUTPUT ONLY JSON. DO NOT ADD ANY OTHER TEXT."""
 
-    try:
+    def call_groq(key: str) -> str:
+        """Helper function to call Groq API with the given key."""
+        client = Groq(api_key=key)
         chat_completion = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": "You are a JSON-only response bot. Never return anything except valid JSON."},
@@ -83,8 +93,25 @@ STOP. OUTPUT ONLY JSON. DO NOT ADD ANY OTHER TEXT."""
             temperature=0.0,
             max_tokens=1024,
         )
-
-        raw_response = chat_completion.choices[0].message.content.strip()
+        return chat_completion.choices[0].message.content.strip()
+    
+    try:
+        try:
+            raw_response = call_groq(resolved_key)
+        except Exception as e:
+            error_message = str(e).lower()
+            # Check if error indicates key exhaustion
+            if any(keyword in error_message for keyword in ["exhausted", "rate limit", "quota", "exceeded", "invalid api key"]):
+                print(f"[AI SERVICE] Primary key exhausted or rate limited, attempting fallback key...")
+                if fallback_key:
+                    print(f"[AI SERVICE] Retrying with GROQ_API_KEY_1")
+                    raw_response = call_groq(fallback_key)
+                    print(f"[AI SERVICE] Successfully used fallback key")
+                else:
+                    print(f"[AI SERVICE] ERROR: Primary key failed and no fallback key available")
+                    raise
+            else:
+                raise
         print(f"[AI SERVICE] Raw Groq response: {raw_response[:200]}...")
 
         # Aggressive cleanup: remove markdown code blocks and extract JSON
